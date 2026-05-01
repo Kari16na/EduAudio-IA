@@ -2,80 +2,97 @@ import { useState, useEffect, useRef } from "react";
 import NavBar from "../Components/NavBar";
 import styles from "./Player.module.css";
 
-// Párrafos de ejemplo que se van resaltando
-const PARAGRAPHS = [
-  "Este es el resumen generado por EduAudio IA del documento seleccionado.",
-  "A medida que el audio avanza, el texto resaltado cambia para que sepas qué parte se está leyendo.",
-  "Puedes pausar, retroceder o adelantar el audio usando los controles de abajo.",
-  "También puedes cambiar la velocidad de reproducción según tu preferencia de estudio.",
-  "EduAudio IA convierte tus documentos en experiencias de aprendizaje inteligentes.",
-];
-
-const TOTAL_SECONDS = 310; // 5:10 minutos
-
 export default function Player({ onNavigate }) {
 
-  const [isPlaying,    setIsPlaying]    = useState(false);
-  const [currentTime,  setCurrentTime]  = useState(0);
-  const [speed,        setSpeed]        = useState(1);
-  const intervalRef = useRef(null);
+  const audio = JSON.parse(localStorage.getItem("currentAudio") || "{}");
+  const PARAGRAPHS = audio.paragraphs?.length > 0
+    ? audio.paragraphs
+    : ["No hay contenido disponible."];
 
-  // Párrafo activo según el tiempo
-  const activeParagraph = Math.floor(
-    (currentTime / TOTAL_SECONDS) * PARAGRAPHS.length
-  );
+  const [isPlaying,   setIsPlaying]   = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration,    setDuration]    = useState(0);
+  const [slow,        setSlow]        = useState(false);
+  const audioRef = useRef(null);
 
-  // Avanza el tiempo cuando está reproduciendo
+  const totalPalabras = PARAGRAPHS.reduce((acc, p) => acc + p.split(' ').length, 0);
+  const palabraGlobal = duration > 0
+    ? Math.floor((currentTime / duration) * totalPalabras)
+    : 0;
+
+  // ✅ Corregido: sin let contador
+  const PARRAFOS_PROCESADOS = PARAGRAPHS.map((parrafo, i) => {
+    const palabras = parrafo.split(' ');
+    const inicio = PARAGRAPHS
+      .slice(0, i)
+      .reduce((acc, p) => acc + p.split(' ').length, 0);
+    return { palabras, inicio };
+  });
+
   useEffect(() => {
-    if (isPlaying) {
-      intervalRef.current = setInterval(() => {
-        setCurrentTime((prev) => {
-          if (prev >= TOTAL_SECONDS) {
-            setIsPlaying(false);
-            return TOTAL_SECONDS;
-          }
-          return prev + speed;
-        });
-      }, 1000);
-    } else {
-      clearInterval(intervalRef.current);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = slow ? 0.75 : 1;
     }
-    return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed]);
+  }, [slow]);
 
-  // Formatea segundos a MM:SS
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
+    const updateTime = () => setCurrentTime(audioEl.currentTime);
+    const updateDur  = () => setDuration(audioEl.duration);
+    audioEl.addEventListener('timeupdate',     updateTime);
+    audioEl.addEventListener('loadedmetadata', updateDur);
+    return () => {
+      audioEl.removeEventListener('timeupdate',     updateTime);
+      audioEl.removeEventListener('loadedmetadata', updateDur);
+    };
+  }, []);
+
   function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return "00:00";
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
 
-  // Clic en la barra de progreso
   function handleProgressClick(e) {
-    const bar   = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - bar.left) / bar.width;
-    setCurrentTime(Math.floor(ratio * TOTAL_SECONDS));
+    const bar     = e.currentTarget.getBoundingClientRect();
+    const ratio   = (e.clientX - bar.left) / bar.width;
+    const newTime = ratio * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
   }
 
-  // Retroceder / adelantar 10 segundos
   function skip(seconds) {
-    setCurrentTime((prev) =>
-      Math.min(TOTAL_SECONDS, Math.max(0, prev + seconds))
-    );
+    const newTime = Math.min(duration, Math.max(0, currentTime + seconds));
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
   }
 
-  const progress = (currentTime / TOTAL_SECONDS) * 100;
+  function togglePlay() {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  }
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className={styles.page}>
 
+      <audio
+        ref={audioRef}
+        src={audio.audioUrl}
+        onEnded={() => setIsPlaying(false)}
+      />
+
       <NavBar
         onNavigate={onNavigate}
         rightContent={
-          <button
-            className={styles.btnBack}
-            onClick={() => onNavigate("audios")}
-          >
+          <button className={styles.btnBack} onClick={() => onNavigate("audios")}>
             ← Mis Audios
           </button>
         }
@@ -83,92 +100,83 @@ export default function Player({ onNavigate }) {
 
       <main className={styles.main}>
 
-        {/* Título */}
         <div className={styles.titleBox}>
-          <h2 className={styles.title}>🎧 Reproduciendo: Documento1.pdf</h2>
+          <h2 className={styles.title}>
+            🎧 {audio.fileName || "Documento"}
+          </h2>
         </div>
 
-        {/* Párrafos con resaltado */}
         <div className={styles.textBox}>
-          {PARAGRAPHS.map((paragraph, index) => (
-            <p
-              key={index}
-              className={
-                index === activeParagraph
-                  ? styles.paragraphActive
-                  : styles.paragraph
-              }
-            >
-              {paragraph}
+          {PARRAFOS_PROCESADOS.map((item, pIndex) => (
+            <p key={pIndex} className={styles.parrafo}>
+              {item.palabras.map((palabra, wIndex) => {
+                const indiceGlobal = item.inicio + wIndex;
+                const esActiva = indiceGlobal === palabraGlobal && isPlaying;
+                return (
+                  <span
+                    key={wIndex}
+                    className={esActiva ? styles.palabraActiva : styles.palabra}
+                  >
+                    {palabra}{" "}
+                  </span>
+                );
+              })}
             </p>
           ))}
         </div>
 
-        {/* Barra de progreso */}
         <div className={styles.progressSection}>
           <span className={styles.time}>{formatTime(currentTime)}</span>
-          <div
-            className={styles.progressBar}
-            onClick={handleProgressClick}
-          >
+          <div className={styles.progressBar} onClick={handleProgressClick}>
             <div
               className={styles.progressFill}
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className={styles.time}>{formatTime(TOTAL_SECONDS)}</span>
+          <span className={styles.time}>{formatTime(duration)}</span>
         </div>
 
-        {/* Controles */}
         <div className={styles.controls}>
-
-          {/* Retroceder */}
-          <button
-            className={styles.btnSkip}
-            onClick={() => skip(-10)}
-          >
+          <button className={styles.btnSkip} onClick={() => skip(-10)}>
             ⏮ 10s
           </button>
-
-          {/* Play / Pause */}
-          <button
-            className={styles.btnPlay}
-            onClick={() => setIsPlaying(!isPlaying)}
-          >
+          <button className={styles.btnPlay} onClick={togglePlay}>
             {isPlaying ? "⏸" : "▶"}
           </button>
-
-          {/* Adelantar */}
-          <button
-            className={styles.btnSkip}
-            onClick={() => skip(10)}
-          >
+          <button className={styles.btnSkip} onClick={() => skip(10)}>
             10s ⏭
           </button>
-
         </div>
 
-        {/* Selector de velocidad */}
         <div className={styles.speedSection}>
           <span className={styles.speedLabel}>Velocidad:</span>
           <div className={styles.speedButtons}>
-            {[0.75, 1, 1.25, 1.5].map((s) => (
-              <button
-                key={s}
-                className={
-                  speed === s
-                    ? styles.speedBtnActive
-                    : styles.speedBtn
-                }
-                onClick={() => setSpeed(s)}
-              >
-                {s}x
-              </button>
-            ))}
+            <button
+              className={!slow ? styles.speedBtnActive : styles.speedBtn}
+              onClick={() => setSlow(false)}
+            >
+              Normal
+            </button>
+            <button
+              className={slow ? styles.speedBtnActive : styles.speedBtn}
+              onClick={() => setSlow(true)}
+            >
+              Lento
+            </button>
           </div>
+        </div>
+
+        <div className={styles.downloadSection}>
+          <a
+            href={audio.audioUrl}
+            download={`${audio.fileName || "audio"}.mp3`}
+            className={styles.btnDownload}
+          >
+            ⬇ Descargar MP3
+          </a>
         </div>
 
       </main>
     </div>
   );
-};
+}

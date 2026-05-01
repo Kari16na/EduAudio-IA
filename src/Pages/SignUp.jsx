@@ -11,7 +11,7 @@ export default function SignUp({ onNavigate }) {
   const [acceptTerms,     setAcceptTerms]     = useState(false);
   const [error,           setError]           = useState(null);
 
-  function handleRegister() {
+  async function handleRegister() {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError("Por favor completa todos los campos.");
       return;
@@ -29,10 +29,20 @@ export default function SignUp({ onNavigate }) {
       return;
     }
     setError(null);
-    onNavigate("dashboard");
+    try {
+      const res = await fetch("http://localhost:3000/api/users/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: name, email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message); return; }
+      onNavigate("login");
+    } catch {
+      setError("Error al conectar con el servidor.");
+    }
   }
 
-  // Nivel de seguridad de la contraseña
   function getPasswordLevel() {
     if (password.length === 0) return 0;
     if (password.length < 4)   return 1;
@@ -48,7 +58,6 @@ export default function SignUp({ onNavigate }) {
   return (
     <FormCard onNavigate={onNavigate}>
 
-      {/* Encabezado */}
       <div className={styles.header}>
         <div className={styles.headerIcon}>✍️</div>
         <h2 className={styles.title}>Crea tu cuenta</h2>
@@ -57,7 +66,6 @@ export default function SignUp({ onNavigate }) {
         </p>
       </div>
 
-      {/* Campo nombre */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Nombre Completo:</label>
         <input
@@ -69,7 +77,6 @@ export default function SignUp({ onNavigate }) {
         />
       </div>
 
-      {/* Campo email */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Correo Electrónico:</label>
         <input
@@ -81,7 +88,6 @@ export default function SignUp({ onNavigate }) {
         />
       </div>
 
-      {/* Campo contraseña */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Contraseña:</label>
         <input
@@ -91,8 +97,6 @@ export default function SignUp({ onNavigate }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-
-        {/* Barra de seguridad */}
         {password.length > 0 && (
           <div className={styles.strengthWrapper}>
             <div className={styles.strengthBars}>
@@ -118,7 +122,6 @@ export default function SignUp({ onNavigate }) {
         )}
       </div>
 
-      {/* Campo confirmar contraseña */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Confirmar Contraseña:</label>
         <input
@@ -139,7 +142,6 @@ export default function SignUp({ onNavigate }) {
         )}
       </div>
 
-      {/* Checkbox términos */}
       <div className={styles.checkboxGroup}>
         <input
           type="checkbox"
@@ -150,28 +152,19 @@ export default function SignUp({ onNavigate }) {
         />
         <label htmlFor="terms" className={styles.checkboxLabel}>
           Acepto los{" "}
-          <span className={styles.termsLink}>
-            Términos y Condiciones
-          </span>
+          <span className={styles.termsLink}>Términos y Condiciones</span>
         </label>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className={styles.error}>⚠️ {error}</div>
-      )}
+      {error && <div className={styles.error}>⚠️ {error}</div>}
 
-      {/* Botón */}
       <button className={styles.btnPrimary} onClick={handleRegister}>
         Crear cuenta
       </button>
 
       <p className={styles.loginLink}>
         ¿Ya tienes cuenta?{" "}
-        <button
-          className={styles.btnLink}
-          onClick={() => onNavigate("login")}
-        >
+        <button className={styles.btnLink} onClick={() => onNavigate("login")}>
           Inicia sesión
         </button>
       </p>

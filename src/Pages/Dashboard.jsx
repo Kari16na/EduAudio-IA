@@ -4,22 +4,40 @@ import styles from "./Dashboard.module.css";
 
 export default function Dashboard({ onNavigate }) {
 
-  const [file,     setFile]     = useState(null);
-  const [speed,    setSpeed]    = useState("1");
-  const [loading,  setLoading]  = useState(false);
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const [file,    setFile]    = useState(null);
+  const [loading, setLoading] = useState(false);
 
   function handleFile(e) {
     setFile(e.target.files[0]);
   }
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!file) return;
     setLoading(true);
-    // Simulamos que la IA procesa el archivo
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("document", file);
+
+      const res = await fetch("http://localhost:3000/api/audios/generate", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) { alert(data.message); return; }
+
+      // Guardar audio actual para el player
+      localStorage.setItem("currentAudio", JSON.stringify(data.audio));
       onNavigate("audios");
-    }, 2000);
+
+    } catch {
+      alert("Error al generar el audio.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -30,11 +48,15 @@ export default function Dashboard({ onNavigate }) {
         rightContent={
           <div className={styles.navRight}>
             <span className={styles.welcome}>
-              Bienvenido, <strong>Estudiante</strong>
+              Bienvenido, <strong>{storedUser.fullName || "Estudiante"}</strong>
             </span>
             <button
               className={styles.btnLogout}
-              onClick={() => onNavigate("landing")}
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                onNavigate("landing");
+              }}
             >
               Cerrar Sesión
             </button>
@@ -44,18 +66,14 @@ export default function Dashboard({ onNavigate }) {
 
       <main className={styles.main}>
 
-        {/* Columna izquierda: subir documento */}
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>📤 Subir Documento</h2>
           <p className={styles.cardSubtitle}>
-            Sube tu archivo PDF o Word para convertirlo en audio de estudio.
+            Sube tu archivo PDF o Word y la IA lo resumirá y convertirá en audio.
           </p>
 
-          <label className={styles.label}>
-            Selecciona o arrastra tu archivo:
-          </label>
+          <label className={styles.label}>Selecciona o arrastra tu archivo:</label>
 
-          {/* Zona de carga */}
           <label className={styles.dropZone}>
             <input
               type="file"
@@ -81,43 +99,23 @@ export default function Dashboard({ onNavigate }) {
             )}
           </label>
 
-          {/* Velocidad */}
-          <label className={styles.label}>Velocidad de voz:</label>
-          <select
-            className={styles.select}
-            value={speed}
-            onChange={(e) => setSpeed(e.target.value)}
-          >
-            <option value="0.75">Lenta (0.75x)</option>
-            <option value="1">Normal (1x)</option>
-            <option value="1.25">Rápida (1.25x)</option>
-            <option value="1.5">Muy rápida (1.5x)</option>
-          </select>
-
-          {/* Botón generar */}
           <button
             className={styles.btnGenerate}
             onClick={handleGenerate}
             disabled={!file || loading}
           >
-            {loading ? "⏳ Generando audio..." : "🎵 Generar Audio con IA"}
+            {loading ? "⏳ Generando resumen y audio..." : "🎵 Generar Audio con IA"}
           </button>
         </section>
 
-        {/* Columna derecha: audios recientes */}
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>🎧 Mis Audios Recientes</h2>
-
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🎵</div>
             <p className={styles.emptyText}>
-              Aún no has convertido ningún documento.
-            </p>
-            <p className={styles.emptySubtext}>
-              Sube un archivo para comenzar.
+              Sube un documento para convertirlo en audio de estudio.
             </p>
           </div>
-
           <button
             className={styles.btnSecondary}
             onClick={() => onNavigate("audios")}
@@ -127,7 +125,6 @@ export default function Dashboard({ onNavigate }) {
         </section>
 
       </main>
-
     </div>
   );
 }

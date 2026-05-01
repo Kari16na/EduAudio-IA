@@ -1,0 +1,22 @@
+### 1. Registro de usuario
+POST http://localhost:3000/api/users/register
+content-type: application/json
+
+{
+  "fullName": "Karina Romero",
+  "email": "karina@correo.com",
+  "password": "12345678"
+}
+
+### 2. Login
+POST http://localhost:3000/api/users/login
+content-type: application/json
+
+{
+  "email": "karina@correo.com",
+  "password": "12345678"
+}
+
+### 3. Obtener mis audios
+GET http://localhost:3000/api/audios
+Authorization: Bearer TU_TOKEN_AQUI

@@ -8,32 +8,39 @@ export default function Login({ onNavigate }) {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState(null);
 
-  function handleLogin() {
+  async function handleLogin() {
     if (!email.trim() || !password.trim()) {
       setError("Por favor completa todos los campos.");
       return;
     }
     setError(null);
-    onNavigate("dashboard");
+    try {
+      const res = await fetch("http://localhost:3000/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message); return; }
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      onNavigate("dashboard");
+    } catch {
+      setError("Error al conectar con el servidor.");
+    }
   }
 
   return (
     <FormCard onNavigate={onNavigate}>
 
-      {/* Encabezado */}
       <div className={styles.header}>
         <div className={styles.headerIcon}>🔑</div>
         <h2 className={styles.title}>Iniciar Sesión</h2>
-        <p className={styles.subtitle}>
-          Bienvenido de nuevo a EduAudio IA
-        </p>
+        <p className={styles.subtitle}>Bienvenido de nuevo a EduAudio IA</p>
       </div>
 
-      {/* Campo email */}
       <div className={styles.fieldGroup}>
-        <label className={styles.label}>
-          Correo Electrónico:
-        </label>
+        <label className={styles.label}>Correo Electrónico:</label>
         <input
           className={styles.input}
           type="email"
@@ -43,11 +50,8 @@ export default function Login({ onNavigate }) {
         />
       </div>
 
-      {/* Campo contraseña */}
       <div className={styles.fieldGroup}>
-        <label className={styles.label}>
-          Contraseña:
-        </label>
+        <label className={styles.label}>Contraseña:</label>
         <input
           className={styles.input}
           type="password"
@@ -57,32 +61,19 @@ export default function Login({ onNavigate }) {
         />
       </div>
 
-      {/* Mensaje de error */}
-      {error && (
-        <div className={styles.error}>
-          ⚠️ {error}
-        </div>
-      )}
+      {error && <div className={styles.error}>⚠️ {error}</div>}
 
-      {/* Botón principal */}
       <button className={styles.btnPrimary} onClick={handleLogin}>
         Entrar
       </button>
 
-      {/* Links secundarios */}
       <div className={styles.links}>
-        <button
-          className={styles.btnLink}
-          onClick={() => onNavigate("forgot")}
-        >
+        <button className={styles.btnLink} onClick={() => onNavigate("forgot")}>
           ¿Olvidaste tu contraseña?
         </button>
         <span className={styles.linkText}>
           ¿No tienes una cuenta?{" "}
-          <button
-            className={styles.btnLink}
-            onClick={() => onNavigate("signup")}
-          >
+          <button className={styles.btnLink} onClick={() => onNavigate("signup")}>
             Regístrate
           </button>
         </span>

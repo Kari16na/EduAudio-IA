@@ -6,10 +6,30 @@ export default function ForgotPassword({ onNavigate }) {
 
   const [email, setEmail] = useState("");
   const [sent,  setSent]  = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSend() {
+  async function handleSend() {
     if (!email.trim()) return;
-    setSent(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("http://localhost:3000/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message);
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("Error al conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Vista 2: éxito
@@ -61,12 +81,16 @@ export default function ForgotPassword({ onNavigate }) {
         />
       </div>
 
+      {error && (
+        <div className={styles.error}>⚠️ {error}</div>
+      )}
+
       <button
         className={styles.btnPrimary}
         onClick={handleSend}
-        disabled={!email.trim()}
+        disabled={!email.trim() || loading}
       >
-        Enviar enlace
+        {loading ? "Enviando..." : "Enviar enlace"}
       </button>
 
       <div className={styles.backLink}>
