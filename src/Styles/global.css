@@ -1,0 +1,51 @@
+:root {
+  --color-primary:     #4A3F8F;
+  --color-secondary:   #7B5EA7;
+  --color-accent:      #F5A623;
+  --color-accent-dark: #E09515;
+  --color-bg:          #F0EEF8;
+  --color-bg-2:        #DDD8F5;
+  --color-white:       #FFFFFF;
+  --color-text-dark:   #2C2C4A;
+  --color-text-gray:   #888888;
+  --color-card-bg:     rgba(255, 255, 255, 0.85);
+  --color-error:       #dc3545;
+  --color-success:     #28a745;
+
+  --font-main: 'Georgia', serif;
+
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-full: 50px;
+
+  --shadow-sm: 0 4px 20px rgba(74, 63, 143, 0.08);
+  --shadow-md: 0 8px 30px rgba(74, 63, 143, 0.12);
+  --shadow-lg: 0 20px 60px rgba(74, 63, 143, 0.15);
+}
+
+/* Reset básico */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  color: var(--color-text-dark);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-main);
+  cursor: pointer;
+}
+
+input,
+select {
+  font-family: var(--font-main);
+}

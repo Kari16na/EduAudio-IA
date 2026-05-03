@@ -1,0 +1,13 @@
+.logo {
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(74, 63, 143, 0.3);
+  flex-shrink: 0;
+}

@@ -1,0 +1,245 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg) 0%,
+    var(--color-bg-2) 100%
+  );
+}
+
+.btnBack {
+  background: none;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.btnBack:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.titleBox {
+  text-align: center;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--color-text-dark);
+}
+
+/* Caja de texto con párrafos */
+.textBox {
+  background: var(--color-card-bg);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255,255,255,0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.paragraph {
+  font-size: 15px;
+  color: var(--color-text-gray);
+  line-height: 1.8;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  transition: all 0.4s;
+}
+
+
+/* Barra de progreso */
+.progressSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time {
+  font-size: 13px;
+  color: var(--color-text-gray);
+  white-space: nowrap;
+  min-width: 40px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 8px;
+  background: rgba(74, 63, 143, 0.15);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  border-radius: var(--radius-full);
+  transition: width 0.3s;
+}
+
+/* Controles play/pause/skip */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btnPlay {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  color: var(--color-white);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(74, 63, 143, 0.4);
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btnPlay:hover {
+  transform: scale(1.08);
+}
+
+.btnSkip {
+  background: none;
+  border: 2px solid rgba(74, 63, 143, 0.2);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.btnSkip:hover {
+  background: rgba(74, 63, 143, 0.08);
+}
+
+/* Selector de velocidad */
+.speedSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.speedLabel {
+  font-size: 14px;
+  color: var(--color-text-gray);
+}
+
+.speedButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.speedBtn {
+  background: none;
+  border: 2px solid rgba(74, 63, 143, 0.2);
+  color: var(--color-text-gray);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.speedBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.speedBtnActive {
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+}
+.downloadSection {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btnDownload {
+  background: none;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btnDownload:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.palabra {
+  color: var(--color-text-gray);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.palabraActiva {
+  background: var(--color-accent);
+  color: var(--color-white);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 15px;
+  line-height: 1.8;
+  transition: all 0.2s;
+}
+.parrafo {
+  font-size: 15px;
+  line-height: 2;
+  color: var(--color-text-gray);
+  margin-bottom: 8px;
+}
