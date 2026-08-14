@@ -39,12 +39,20 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-size: 22px;
   font-weight: 900;
   color: var(--color-text-dark);
 }
 
-/* Caja de texto con párrafos */
+.icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
 .textBox {
   background: var(--color-card-bg);
   border-radius: var(--radius-lg);
@@ -65,8 +73,6 @@
   transition: all 0.4s;
 }
 
-
-/* Barra de progreso */
 .progressSection {
   display: flex;
   align-items: center;
@@ -101,7 +107,6 @@
   transition: width 0.3s;
 }
 
-/* Controles play/pause/skip */
 .controls {
   display: flex;
   align-items: center;
@@ -150,77 +155,6 @@
   background: rgba(74, 63, 143, 0.08);
 }
 
-/* Selector de velocidad */
-.speedSection {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.speedLabel {
-  font-size: 14px;
-  color: var(--color-text-gray);
-}
-
-.speedButtons {
-  display: flex;
-  gap: 8px;
-}
-
-.speedBtn {
-  background: none;
-  border: 2px solid rgba(74, 63, 143, 0.2);
-  color: var(--color-text-gray);
-  border-radius: var(--radius-full);
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-  transition: all 0.2s;
-}
-
-.speedBtn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.speedBtnActive {
-  background: var(--color-primary);
-  border: 2px solid var(--color-primary);
-  color: var(--color-white);
-  border-radius: var(--radius-full);
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-}
-.downloadSection {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.btnDownload {
-  background: none;
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: var(--radius-full);
-  padding: 10px 24px;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.btnDownload:hover {
-  background: var(--color-primary);
-  color: var(--color-white);
-}
 .palabra {
   color: var(--color-text-gray);
   font-size: 15px;
@@ -237,6 +171,7 @@
   line-height: 1.8;
   transition: all 0.2s;
 }
+
 .parrafo {
   font-size: 15px;
   line-height: 2;

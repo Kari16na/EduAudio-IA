@@ -1,3 +1,4 @@
+import { Headphones, FileText, FileEdit } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import styles from "./Landing.module.css";
 
@@ -20,7 +21,7 @@ export default function Landing({ onNavigate }) {
       <main className={styles.hero}>
 
         {/* Ícono grande */}
-        <div className={styles.icon}>🎧</div>
+        <Headphones size={72} className={styles.icon} />
 
         {/* Títulos */}
         <h1 className={styles.titleLight}>Bienvenido a</h1>
@@ -43,8 +44,12 @@ export default function Landing({ onNavigate }) {
 
         {/* Badges de formatos */}
         <div className={styles.badges}>
-          <span className={styles.badge}>📄 PDF</span>
-          <span className={styles.badge}>📝 Word</span>
+          <span className={styles.badge}>
+            <FileText size={16} /> PDF
+          </span>
+          <span className={styles.badge}>
+            <FileEdit size={16} /> Word
+          </span>
         </div>
 
       </main>

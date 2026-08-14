@@ -1,0 +1,197 @@
+/* src/Pages/Perfil.module.css */
+.page {
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg) 0%,
+    var(--color-bg-2) 100%
+  );
+}
+
+.main {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 24px;
+}
+
+.card {
+  background: var(--color-card-bg);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: 40px 36px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  max-width: 440px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Avatar */
+.avatarBox {
+  text-align: center;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 20px rgba(74, 63, 143, 0.3);
+}
+
+.userName {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--color-text-dark);
+  margin-bottom: 4px;
+}
+
+.userEmail {
+  font-size: 14px;
+  color: var(--color-text-gray);
+}
+
+/* Estadística */
+.statBox {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.statNumber {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--color-primary);
+  margin: 0 0 4px 0;
+}
+
+.statLabel {
+  color: var(--color-text-gray);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Formulario */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--color-secondary);
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid rgba(74, 63, 143, 0.15);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-dark);
+  outline: none;
+  font-family: var(--font-main);
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--color-secondary);
+}
+
+/* Mensajes */
+.msgExito {
+  background: rgba(40, 167, 69, 0.08);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--color-success);
+  font-size: 13px;
+  text-align: center;
+}
+
+.msgError {
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--color-error);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Botones */
+.btnPrimary {
+  width: 100%;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-dark)
+  );
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
+  font-family: var(--font-main);
+  transition: transform 0.2s;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-1px);
+}
+
+.btnLogout {
+  width: 100%;
+  background: none;
+  border: 2px solid rgba(136, 136, 136, 0.4);
+  color: var(--color-text-gray);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.btnLogout:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.btnVolver {
+  background: none;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.btnVolver:hover {
+  background: var(--color-primary);
+  color: var(--color-purple);
+}

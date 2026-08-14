@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Lock, CheckCircle, AlertCircle } from "lucide-react";
 import FormCard from "../Components/FormCard";
 import styles from "./ForgotPassword.module.css";
 
@@ -11,6 +12,12 @@ export default function ForgotPassword({ onNavigate }) {
 
   async function handleSend() {
     if (!email.trim()) return;
+
+    if (!email.includes("@")) {
+      setError("Ingresa un correo electrónico válido (debe contener @)");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -37,7 +44,9 @@ export default function ForgotPassword({ onNavigate }) {
     return (
       <FormCard onNavigate={onNavigate}>
         <div className={styles.successBox}>
-          <div className={styles.successIcon}>✅</div>
+          <div className={styles.successIcon}>
+            <CheckCircle size={48} />
+          </div>
           <h2 className={styles.title}>¡Correo enviado!</h2>
           <p className={styles.successText}>
             Enviamos un enlace de recuperación a:
@@ -62,7 +71,9 @@ export default function ForgotPassword({ onNavigate }) {
     <FormCard onNavigate={onNavigate}>
 
       <div className={styles.header}>
-        <div className={styles.headerIcon}>🔒</div>
+        <div className={styles.headerIcon}>
+          <Lock size={40} />
+        </div>
         <h2 className={styles.title}>¿Olvidaste tu contraseña?</h2>
         <p className={styles.subtitle}>
           Ingresa tu correo electrónico y te enviaremos
@@ -75,6 +86,7 @@ export default function ForgotPassword({ onNavigate }) {
         <input
           className={styles.input}
           type="email"
+          data-testid="forgot-email"
           placeholder="ejemplo@correo.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -82,11 +94,15 @@ export default function ForgotPassword({ onNavigate }) {
       </div>
 
       {error && (
-        <div className={styles.error}>⚠️ {error}</div>
+        <div className={styles.error} data-testid="forgot-error">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
       )}
 
       <button
         className={styles.btnPrimary}
+        data-testid="forgot-submit"
         onClick={handleSend}
         disabled={!email.trim() || loading}
       >

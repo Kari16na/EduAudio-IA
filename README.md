@@ -1,3 +1,30 @@
+
+# 🎧 EduAudio IA
+
+Aplicación web que convierte documentos PDF y Word en audios
+de estudio usando inteligencia artificial.
+
+---
+
+## 🛠 Tecnologías
+
+**Frontend:** React + Vite  
+**Backend:** Node.js + Express + MongoDB  
+**IA:** Groq (LLaMA 3)  
+**Audio:** gTTS  
+**Auth:** JWT + bcrypt  
+
+---
+
+## 📁 Estructura del proyecto
+/frontend        → React (Vite)
+/backend         → Node.js + Express
+/middleware    → authMiddleware.js
+/models        → User.js, Audio.js
+/routes        → userRoutes, audioRoutes, generateRoutes, authRoutes
+/public        → Audios generados
+server.js
+.env
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

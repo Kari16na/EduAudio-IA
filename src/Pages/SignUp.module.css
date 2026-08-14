@@ -4,8 +4,11 @@
 }
 
 .headerIcon {
-  font-size: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 12px;
+  color: var(--color-primary);
 }
 
 .title {
@@ -69,6 +72,7 @@
   height: 4px;
   flex: 1;
   border-radius: 2px;
+  background: rgba(0, 0, 0, 0.08);
   transition: background 0.3s;
 }
 
@@ -77,6 +81,11 @@
   font-weight: bold;
   white-space: nowrap;
 }
+
+.level1 { background-color: #dc3545; color: #dc3545; }
+.level2 { background-color: #fd7e14; color: #fd7e14; }
+.level3 { background-color: #ffc107; color: #ffc107; }
+.level4 { background-color: #28a745; color: #28a745; }
 
 .fieldError {
   color: var(--color-error);

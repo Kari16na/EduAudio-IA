@@ -4,8 +4,11 @@
 }
 
 .headerIcon {
-  font-size: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 12px;
+  color: var(--color-primary);
 }
 
 .title {
@@ -49,6 +52,10 @@
 }
 
 .error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: rgba(220, 53, 69, 0.08);
   border: 1px solid rgba(220, 53, 69, 0.3);
   border-radius: var(--radius-sm);

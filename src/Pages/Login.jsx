@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { KeyRound, AlertCircle } from "lucide-react";
 import FormCard from "../Components/FormCard";
 import styles from "./Login.module.css";
 
@@ -34,7 +35,9 @@ export default function Login({ onNavigate }) {
     <FormCard onNavigate={onNavigate}>
 
       <div className={styles.header}>
-        <div className={styles.headerIcon}>🔑</div>
+        <div className={styles.headerIcon}>
+          <KeyRound size={40} />
+        </div>
         <h2 className={styles.title}>Iniciar Sesión</h2>
         <p className={styles.subtitle}>Bienvenido de nuevo a EduAudio IA</p>
       </div>
@@ -44,6 +47,7 @@ export default function Login({ onNavigate }) {
         <input
           className={styles.input}
           type="email"
+          data-testid="login-email"
           placeholder="ejemplo@correo.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -55,15 +59,21 @@ export default function Login({ onNavigate }) {
         <input
           className={styles.input}
           type="password"
+          data-testid="login-password"
           placeholder="Tu contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
 
-      {error && <div className={styles.error}>⚠️ {error}</div>}
+      {error && (
+        <div className={styles.error} data-testid="login-error">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <button className={styles.btnPrimary} onClick={handleLogin}>
+      <button className={styles.btnPrimary} data-testid="login-submit" onClick={handleLogin}>
         Entrar
       </button>
 

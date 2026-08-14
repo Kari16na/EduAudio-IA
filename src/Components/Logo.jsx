@@ -1,12 +1,14 @@
+// src/Components/Logo.jsx
 import styles from "./Logo.module.css";
+import logoImg from "../assets/logo.jpeg";
 
 export default function Logo({ size = 56 }) {
   return (
-    <div
+    <img
+      src={logoImg}
+      alt="EduAudio IA"
       className={styles.logo}
-      style={{ width: size, height: size, fontSize: size * 0.46 }}
-    >
-      🎧
-    </div>
+      style={{ width: size, height: size }}
+    />
   );
 }

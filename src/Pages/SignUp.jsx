@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { UserPlus } from "lucide-react";
 import FormCard from "../Components/FormCard";
 import styles from "./SignUp.module.css";
 
@@ -14,6 +15,10 @@ export default function SignUp({ onNavigate }) {
   async function handleRegister() {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError("Por favor completa todos los campos.");
+      return;
+    }
+    if (!email.includes("@")) {
+      setError("Ingresa un correo electrónico válido (debe contener @).");
       return;
     }
     if (password.length < 8) {
@@ -52,14 +57,16 @@ export default function SignUp({ onNavigate }) {
   }
 
   const passwordLevel = getPasswordLevel();
-  const levelColors   = ["", "#dc3545", "#fd7e14", "#ffc107", "#28a745"];
   const levelLabels   = ["", "Muy débil", "Débil", "Media", "Fuerte"];
+  const levelClasses  = ["", styles.level1, styles.level2, styles.level3, styles.level4];
 
   return (
     <FormCard onNavigate={onNavigate}>
 
       <div className={styles.header}>
-        <div className={styles.headerIcon}>✍️</div>
+        <div className={styles.headerIcon}>
+          <UserPlus size={40} />
+        </div>
         <h2 className={styles.title}>Crea tu cuenta</h2>
         <p className={styles.subtitle}>
           Únete a la comunidad de estudio inteligente
@@ -67,11 +74,13 @@ export default function SignUp({ onNavigate }) {
       </div>
 
       <div className={styles.fieldGroup}>
-        <label className={styles.label}>Nombre Completo:</label>
+        <label className={styles.label}>Ingrese su nombre:</label>
         <input
           className={styles.input}
           type="text"
-          placeholder="Ej: Juan Pérez"
+          data-testid="signup-name"
+          placeholder="Ej: Karina Romero"
+          maxLength={50}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
@@ -82,7 +91,9 @@ export default function SignUp({ onNavigate }) {
         <input
           className={styles.input}
           type="email"
+          data-testid="signup-email"
           placeholder="correo@ejemplo.com"
+          maxLength={100}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -93,7 +104,9 @@ export default function SignUp({ onNavigate }) {
         <input
           className={styles.input}
           type="password"
+          data-testid="signup-password"
           placeholder="Mínimo 8 caracteres"
+          maxLength={30}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -103,19 +116,13 @@ export default function SignUp({ onNavigate }) {
               {[1, 2, 3, 4].map((level) => (
                 <div
                   key={level}
-                  className={styles.strengthBar}
-                  style={{
-                    background: level <= passwordLevel
-                      ? levelColors[passwordLevel]
-                      : "rgba(0,0,0,0.08)",
-                  }}
+                  className={`${styles.strengthBar} ${
+                    level <= passwordLevel ? levelClasses[passwordLevel] : ""
+                  }`}
                 />
               ))}
             </div>
-            <span
-              className={styles.strengthLabel}
-              style={{ color: levelColors[passwordLevel] }}
-            >
+            <span className={`${styles.strengthLabel} ${levelClasses[passwordLevel]}`}>
               {levelLabels[passwordLevel]}
             </span>
           </div>
@@ -130,7 +137,9 @@ export default function SignUp({ onNavigate }) {
               ? styles.inputError : ""
           }`}
           type="password"
+          data-testid="signup-confirm-password"
           placeholder="Repite tu contraseña"
+          maxLength={30}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
@@ -146,6 +155,7 @@ export default function SignUp({ onNavigate }) {
         <input
           type="checkbox"
           id="terms"
+          data-testid="signup-terms"
           checked={acceptTerms}
           onChange={(e) => setAcceptTerms(e.target.checked)}
           className={styles.checkbox}
@@ -156,9 +166,9 @@ export default function SignUp({ onNavigate }) {
         </label>
       </div>
 
-      {error && <div className={styles.error}>⚠️ {error}</div>}
+      {error && <div className={styles.error} data-testid="signup-error">⚠️ {error}</div>}
 
-      <button className={styles.btnPrimary} onClick={handleRegister}>
+      <button className={styles.btnPrimary} data-testid="signup-submit" onClick={handleRegister}>
         Crear cuenta
       </button>
 

@@ -7,6 +7,7 @@ import Dashboard      from "./Pages/Dashboard";
 import MisAudios      from "./Pages/MisAudios";
 import Player         from "./Pages/Player";
 import ResetPassword  from "./Pages/ResetPassword";
+import Perfil from "./Pages/Perfil";
 
 export default function App() {
 
@@ -21,7 +22,7 @@ export default function App() {
   }
 
   function navigate(page) {
-    const protegidas = ["dashboard", "audios", "player"];
+    const protegidas = ["dashboard", "audios", "player", "perfil"];
     if (protegidas.includes(page) && !localStorage.getItem("token")) {
       setCurrentPage("login");
       return;
@@ -38,6 +39,7 @@ export default function App() {
     dashboard: <Dashboard      onNavigate={navigate} />,
     audios:    <MisAudios      onNavigate={navigate} />,
     player:    <Player         onNavigate={navigate} />,
+    perfil:    <Perfil         onNavigate={navigate} />,
     reset:     <ResetPassword  onNavigate={navigate} />,
   };
 

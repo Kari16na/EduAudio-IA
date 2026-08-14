@@ -1,22 +1,41 @@
 ### 1. Registro de usuario
 POST http://localhost:3000/api/users/register
-content-type: application/json
+Content-Type: application/json
 
 {
-  "fullName": "Karina Romero",
-  "email": "karina@correo.com",
-  "password": "12345678"
+  "fullName": "Jimmy Gamez",
+  "email": "jimmy0gamez@correo.com",
+  "password": "instrcutor0"
 }
 
 ### 2. Login
 POST http://localhost:3000/api/users/login
-content-type: application/json
+Content-Type: application/json
 
 {
-  "email": "karina@correo.com",
-  "password": "12345678"
+  "email": "jimmy0gamez@correo.com",
+  "password": "instrcutor0"
 }
 
 ### 3. Obtener mis audios
 GET http://localhost:3000/api/audios
-Authorization: Bearer TU_TOKEN_AQUI
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZmE2YzFiOTUzZjY2MzY0OWQ4NWM4OSIsImlhdCI6MTc3ODAxOTU0NCwiZXhwIjoxNzc4MTA1OTQ0fQ.O2Vd7IaZxm2kL1829Bjly-QePGP24_uFW0xvvCBCPtM
+### 4. Generar audio (SUBIR PDF)
+POST http://localhost:3000/api/audios/generate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZmE2YzFiOTUzZjY2MzY0OWQ4NWM4OSIsImlhdCI6MTc3ODAxOTU0NCwiZXhwIjoxNzc4MTA1OTQ0fQ.O2Vd7IaZxm2kL1829Bjly-QePGP24_uFW0xvvCBCPtM
+Content-Type: multipart/form-data
+
+document=@archivo.pdf
+
+### 5. Eliminar audio
+DELETE http://localhost:3000/api/audios/ID_DEL_AUDIO
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZmE2YzFiOTUzZjY2MzY0OWQ4NWM4OSIsImlhdCI6MTc3ODAxOTU0NCwiZXhwIjoxNzc4MTA1OTQ0fQ.O2Vd7IaZxm2kL1829Bjly-QePGP24_uFW0xvvCBCPtM
+
+### 6. Actualizar nombre del audio
+PUT http://localhost:3000/api/audios/ID_DEL_AUDIO
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZmE2YzFiOTUzZjY2MzY0OWQ4NWM4OSIsImlhdCI6MTc3ODAxOTU0NCwiZXhwIjoxNzc4MTA1OTQ0fQ.O2Vd7IaZxm2kL1829Bjly-QePGP24_uFW0xvvCBCPtM
+Content-Type: application/json
+
+{
+  "fileName": "Nuevo nombre del audio"
+}

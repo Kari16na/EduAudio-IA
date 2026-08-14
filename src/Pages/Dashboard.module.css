@@ -66,6 +66,9 @@
 }
 
 .cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 20px;
   font-weight: 900;
   color: var(--color-text-dark);
@@ -86,7 +89,7 @@
 
 /* Zona drag & drop */
 .dropZone {
-  border: 2px dashed rgba(74, 63, 143, 0.3);
+  border: 2px dashed rgba(86, 67, 207, 0.3);
   border-radius: var(--radius-md);
   padding: 32px 16px;
   cursor: pointer;
@@ -96,7 +99,7 @@
 
 .dropZone:hover {
   border-color: var(--color-secondary);
-  background: rgba(123, 94, 167, 0.04);
+  background: rgba(187, 151, 240, 0.04);
 }
 
 .fileInput {
@@ -112,7 +115,10 @@
 }
 
 .dropIcon {
-  font-size: 36px;
+  display: flex;
+  justify-content: center;
+  color: var(--color-secondary);
+  opacity: 0.7;
 }
 
 .dropText {
@@ -133,7 +139,8 @@
 }
 
 .fileIcon {
-  font-size: 32px;
+  display: flex;
+  color: var(--color-primary);
 }
 
 .fileName {
@@ -157,6 +164,10 @@
 }
 
 .btnGenerate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   background: linear-gradient(
     135deg,
@@ -197,8 +208,10 @@
 }
 
 .emptyIcon {
-  font-size: 48px;
+  display: flex;
+  justify-content: center;
   margin-bottom: 16px;
+  color: var(--color-secondary);
   opacity: 0.4;
 }
 
@@ -231,4 +244,89 @@
 .btnSecondary:hover {
   background: var(--color-primary);
   color: var(--color-white);
+}
+/* Spinner overlay */
+.spinnerOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(74, 63, 143, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.spinnerCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 48px 40px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.spinner {
+  width: 64px;
+  height: 64px;
+  border: 6px solid rgba(255, 255, 255, 0.25);
+  border-top: 6px solid white;
+  border-radius: 50%;
+  animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+.spinnerTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+  text-align: center;
+}
+
+.spinnerSubtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+  max-width: 280px;
+}
+
+/* Botón perfil */
+.btnPerfil {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.btnPerfil:hover {
+  background: rgba(86, 67, 207, 0.15);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+/* Contador */
+.statNumber {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--color-primary);
+  margin: 0 0 4px 0;
 }

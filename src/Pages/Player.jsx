@@ -1,52 +1,118 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Headphones } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import styles from "./Player.module.css";
 
+// Ajusta este valor (en segundos) para compensar el desfase entre el audio
+// y el resaltado de palabras. Si el resaltado va ATRASADO respecto al audio
+// (el audio "va de primeras"), sube este número. Si el resaltado se ADELANTA,
+// bájalo o ponlo en negativo. Prueba de 0.1 en 0.1 hasta que se sienta natural.
+const SYNC_OFFSET_SECONDS = 0.15;
+
+// Pesos usados para estimar cuánto "tarda" cada palabra en pronunciarse,
+// ya que gTTS no nos da timestamps reales por palabra. Ponderamos por
+// longitud de la palabra (las palabras largas tardan más) y agregamos
+// peso extra si la palabra termina en un signo de puntuación (las pausas
+// después de punto, coma, etc. duran más que entre palabras normales).
+const PESO_BASE_PALABRA = 3;
+const PESO_POR_CARACTER = 1;
+const PAUSA_COMA = 4;
+const PAUSA_PUNTO = 9;
+
+function calcularPeso(palabra) {
+  let peso = PESO_BASE_PALABRA + palabra.length * PESO_POR_CARACTER;
+  if (/[.!?]$/.test(palabra)) peso += PAUSA_PUNTO;
+  else if (/[,;:]$/.test(palabra)) peso += PAUSA_COMA;
+  return peso;
+}
+
 export default function Player({ onNavigate }) {
 
-  const audio = JSON.parse(localStorage.getItem("currentAudio") || "{}");
-  const PARAGRAPHS = audio.paragraphs?.length > 0
-    ? audio.paragraphs
-    : ["No hay contenido disponible."];
+  // Se memoriza para que la referencia del arreglo sea estable entre
+  // renders y pueda usarse directamente como dependencia de los hooks.
+  const { audio, PARAGRAPHS } = useMemo(() => {
+    const audioData = JSON.parse(localStorage.getItem("currentAudio") || "{}");
+    const paragraphs = audioData.paragraphs?.length > 0
+      ? audioData.paragraphs
+      : ["No hay contenido disponible."];
+    return { audio: audioData, PARAGRAPHS: paragraphs };
+  }, []);
 
   const [isPlaying,   setIsPlaying]   = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration,    setDuration]    = useState(0);
-  const [slow,        setSlow]        = useState(false);
   const audioRef = useRef(null);
+  const rafIdRef = useRef(null);
 
-  const totalPalabras = PARAGRAPHS.reduce((acc, p) => acc + p.split(' ').length, 0);
-  const palabraGlobal = duration > 0
-    ? Math.floor((currentTime / duration) * totalPalabras)
-    : 0;
+  // Precalcula, una sola vez por documento, el peso de cada palabra y su
+  // peso acumulado (para poder ubicar rápido qué palabra corresponde a
+  // un punto dado del audio).
+  const { PARRAFOS_PROCESADOS, pesosAcumulados, pesoTotal } = useMemo(() => {
+    let acumulado = 0;
+    const acumulados = [];
+    const parrafosProcesados = PARAGRAPHS.map((parrafo) => {
+      const palabras = parrafo.split(' ');
+      const inicio = acumulados.length;
+      palabras.forEach((palabra) => {
+        acumulado += calcularPeso(palabra);
+        acumulados.push(acumulado);
+      });
+      return { palabras, inicio };
+    });
+    return {
+      PARRAFOS_PROCESADOS: parrafosProcesados,
+      pesosAcumulados: acumulados,
+      pesoTotal: acumulado
+    };
+  }, [PARAGRAPHS]);
 
-  // ✅ Corregido: sin let contador
-  const PARRAFOS_PROCESADOS = PARAGRAPHS.map((parrafo, i) => {
-    const palabras = parrafo.split(' ');
-    const inicio = PARAGRAPHS
-      .slice(0, i)
-      .reduce((acc, p) => acc + p.split(' ').length, 0);
-    return { palabras, inicio };
-  });
+  // Tiempo "ajustado" para el cálculo de la palabra activa, compensando el desfase
+  const adjustedTime = Math.max(0, currentTime + SYNC_OFFSET_SECONDS);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = slow ? 0.75 : 1;
+  // Busca qué palabra corresponde al tiempo actual usando los pesos
+  // acumulados en vez de asumir que todas las palabras duran igual.
+  const palabraGlobal = useMemo(() => {
+    if (duration <= 0 || pesoTotal <= 0) return 0;
+    const objetivo = (adjustedTime / duration) * pesoTotal;
+
+    // Búsqueda binaria sobre el arreglo de pesos acumulados (ya está ordenado)
+    let lo = 0, hi = pesosAcumulados.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pesosAcumulados[mid] < objetivo) lo = mid + 1;
+      else hi = mid;
     }
-  }, [slow]);
+    return lo;
+  }, [adjustedTime, duration, pesosAcumulados, pesoTotal]);
 
+  // Actualiza la duración cuando el audio carga metadata
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
-    const updateTime = () => setCurrentTime(audioEl.currentTime);
-    const updateDur  = () => setDuration(audioEl.duration);
-    audioEl.addEventListener('timeupdate',     updateTime);
+    const updateDur = () => setDuration(audioEl.duration);
     audioEl.addEventListener('loadedmetadata', updateDur);
     return () => {
-      audioEl.removeEventListener('timeupdate',     updateTime);
       audioEl.removeEventListener('loadedmetadata', updateDur);
     };
   }, []);
+
+  // Bucle con requestAnimationFrame: actualiza currentTime en cada frame
+  // mientras el audio está sonando, en vez de esperar al evento "timeupdate"
+  // (que dispara con poca frecuencia y se siente entrecortado).
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (!audioEl || !isPlaying) return;
+
+    const tick = () => {
+      setCurrentTime(audioEl.currentTime);
+      rafIdRef.current = requestAnimationFrame(tick);
+    };
+    rafIdRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, [isPlaying]);
 
   function formatTime(seconds) {
     if (!seconds || isNaN(seconds)) return "00:00";
@@ -81,18 +147,23 @@ export default function Player({ onNavigate }) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-testid="player-page">
 
       <audio
         ref={audioRef}
         src={audio.audioUrl}
         onEnded={() => setIsPlaying(false)}
+        data-testid="audio-element"
       />
 
       <NavBar
         onNavigate={onNavigate}
         rightContent={
-          <button className={styles.btnBack} onClick={() => onNavigate("audios")}>
+          <button
+            className={styles.btnBack}
+            onClick={() => onNavigate("audios")}
+            data-testid="btn-back-to-audios"
+          >
             ← Mis Audios
           </button>
         }
@@ -101,14 +172,15 @@ export default function Player({ onNavigate }) {
       <main className={styles.main}>
 
         <div className={styles.titleBox}>
-          <h2 className={styles.title}>
-            🎧 {audio.fileName || "Documento"}
+          <h2 className={styles.title} data-testid="player-title">
+            <Headphones size={22} className={styles.icon} />
+            {audio.fileName || "Documento"}
           </h2>
         </div>
 
-        <div className={styles.textBox}>
+        <div className={styles.textBox} data-testid="player-text-box">
           {PARRAFOS_PROCESADOS.map((item, pIndex) => (
-            <p key={pIndex} className={styles.parrafo}>
+            <p key={pIndex} className={styles.parrafo} data-testid={`parrafo-${pIndex}`}>
               {item.palabras.map((palabra, wIndex) => {
                 const indiceGlobal = item.inicio + wIndex;
                 const esActiva = indiceGlobal === palabraGlobal && isPlaying;
@@ -116,6 +188,8 @@ export default function Player({ onNavigate }) {
                   <span
                     key={wIndex}
                     className={esActiva ? styles.palabraActiva : styles.palabra}
+                    data-testid={`palabra-${indiceGlobal}`}
+                    data-active={esActiva}
                   >
                     {palabra}{" "}
                   </span>
@@ -125,55 +199,45 @@ export default function Player({ onNavigate }) {
           ))}
         </div>
 
-        <div className={styles.progressSection}>
-          <span className={styles.time}>{formatTime(currentTime)}</span>
-          <div className={styles.progressBar} onClick={handleProgressClick}>
+        <div className={styles.progressSection} data-testid="progress-section">
+          <span className={styles.time} data-testid="current-time">{formatTime(currentTime)}</span>
+          <div
+            className={styles.progressBar}
+            onClick={handleProgressClick}
+            data-testid="progress-bar"
+          >
             <div
               className={styles.progressFill}
               style={{ width: `${progress}%` }}
+              data-testid="progress-fill"
             />
           </div>
-          <span className={styles.time}>{formatTime(duration)}</span>
+          <span className={styles.time} data-testid="duration-time">{formatTime(duration)}</span>
         </div>
 
-        <div className={styles.controls}>
-          <button className={styles.btnSkip} onClick={() => skip(-10)}>
+        <div className={styles.controls} data-testid="controls">
+          <button
+            className={styles.btnSkip}
+            onClick={() => skip(-10)}
+            data-testid="btn-skip-back"
+          >
             ⏮ 10s
           </button>
-          <button className={styles.btnPlay} onClick={togglePlay}>
+          <button
+            className={styles.btnPlay}
+            onClick={togglePlay}
+            data-testid="btn-play-pause"
+            data-playing={isPlaying}
+          >
             {isPlaying ? "⏸" : "▶"}
           </button>
-          <button className={styles.btnSkip} onClick={() => skip(10)}>
+          <button
+            className={styles.btnSkip}
+            onClick={() => skip(10)}
+            data-testid="btn-skip-forward"
+          >
             10s ⏭
           </button>
-        </div>
-
-        <div className={styles.speedSection}>
-          <span className={styles.speedLabel}>Velocidad:</span>
-          <div className={styles.speedButtons}>
-            <button
-              className={!slow ? styles.speedBtnActive : styles.speedBtn}
-              onClick={() => setSlow(false)}
-            >
-              Normal
-            </button>
-            <button
-              className={slow ? styles.speedBtnActive : styles.speedBtn}
-              onClick={() => setSlow(true)}
-            >
-              Lento
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.downloadSection}>
-          <a
-            href={audio.audioUrl}
-            download={`${audio.fileName || "audio"}.mp3`}
-            className={styles.btnDownload}
-          >
-            ⬇ Descargar MP3
-          </a>
         </div>
 
       </main>
