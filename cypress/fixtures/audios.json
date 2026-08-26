@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "audio1",
+    "fileName": "Taller de Software.pdf",
+    "audioUrl": "http://localhost:3000/public/audio_test1.mp3",
+    "createdAt": "2026-08-01T10:00:00.000Z"
+  },
+  {
+    "_id": "audio2",
+    "fileName": "Resumen Biologia.docx",
+    "audioUrl": "http://localhost:3000/public/audio_test2.mp3",
+    "createdAt": "2026-08-05T10:00:00.000Z"
+  }
+]

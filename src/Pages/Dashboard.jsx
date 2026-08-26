@@ -1,19 +1,24 @@
 import { useState, useEffect } from "react";
-import { Bot, User, UploadCloud, FileText, File, Music, Headphones } from "lucide-react";
+import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages, Youtube, Volume2, Sparkles } from "lucide-react";
 import NavBar from "../Components/NavBar";
+import { API_URL } from "../config";
 import styles from "./Dashboard.module.css";
 
 export default function Dashboard({ onNavigate }) {
 
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const [file,        setFile]        = useState(null);
+  const [idioma,      setIdioma]      = useState("es");
+  const [categoria,   setCategoria]   = useState("general");
+  const [youtubeUrl,  setYoutubeUrl]  = useState("");
+  const [youtubeMode, setYoutubeMode] = useState("original");
   const [loading,     setLoading]     = useState(false);
   const [totalAudios, setTotalAudios] = useState(0);
 
   useEffect(() => {
     async function contarAudios() {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/audios", {
+      const res = await fetch(`${API_URL}/api/audios`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -33,7 +38,9 @@ export default function Dashboard({ onNavigate }) {
       const token = localStorage.getItem("token");
       const formData = new FormData();
       formData.append("document", file);
-      const res = await fetch("http://localhost:3000/api/audios/generate", {
+      formData.append("language", idioma);
+      formData.append("category", categoria);
+      const res = await fetch(`${API_URL}/api/audios/generate`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData
@@ -44,6 +51,35 @@ export default function Dashboard({ onNavigate }) {
       onNavigate("audios");
     } catch {
       alert("Error al generar el audio.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGenerateYoutube() {
+    if (!youtubeUrl.trim()) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/api/audios/generate-youtube`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          url: youtubeUrl,
+          language: idioma,
+          category: categoria,
+          mode: youtubeMode
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message); return; }
+      localStorage.setItem("currentAudio", JSON.stringify(data.audio));
+      onNavigate("audios");
+    } catch {
+      alert("Error al generar el audio desde YouTube.");
     } finally {
       setLoading(false);
     }
@@ -106,6 +142,38 @@ export default function Dashboard({ onNavigate }) {
             Sube tu archivo PDF o Word y la IA lo resumirá y convertirá en audio.
           </p>
 
+          <label className={styles.label}>Idioma del resumen y el audio:</label>
+          <div className={styles.languageSelector} data-testid="language-selector">
+            <button
+              type="button"
+              className={idioma === "es" ? styles.langBtnActive : styles.langBtn}
+              data-testid="lang-es-btn"
+              onClick={() => setIdioma("es")}
+            >
+              <Languages size={16} /> Español
+            </button>
+            <button
+              type="button"
+              className={idioma === "en" ? styles.langBtnActive : styles.langBtn}
+              data-testid="lang-en-btn"
+              onClick={() => setIdioma("en")}
+            >
+              <Languages size={16} /> English
+            </button>
+          </div>
+
+          <label className={styles.label}>Tipo de contenido:</label>
+          <select
+            className={styles.categorySelect}
+            data-testid="category-select"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+          >
+            <option value="general">General</option>
+            <option value="idiomas">Idiomas</option>
+            <option value="programacion">Programación</option>
+          </select>
+
           <label className={styles.label}>Selecciona o arrastra tu archivo:</label>
 
           <label className={styles.dropZone}>
@@ -143,6 +211,53 @@ export default function Dashboard({ onNavigate }) {
             disabled={!file || loading}
           >
             <Music size={18} /> Generar Audio con IA
+          </button>
+
+          <div className={styles.divider} />
+
+          <label className={styles.label}>O pega un link de YouTube:</label>
+          <input
+            className={styles.youtubeInput}
+            type="text"
+            data-testid="youtube-url-input"
+            placeholder="https://www.youtube.com/watch?v=..."
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+          />
+
+          <label className={styles.label}>¿Qué quieres obtener del video?</label>
+          <div className={styles.languageSelector} data-testid="youtube-mode-selector">
+            <button
+              type="button"
+              className={youtubeMode === "original" ? styles.langBtnActive : styles.langBtn}
+              data-testid="youtube-mode-original-btn"
+              onClick={() => setYoutubeMode("original")}
+            >
+              <Volume2 size={16} /> Audio original
+            </button>
+            <button
+              type="button"
+              className={youtubeMode === "ia" ? styles.langBtnActive : styles.langBtn}
+              data-testid="youtube-mode-ia-btn"
+              onClick={() => setYoutubeMode("ia")}
+            >
+              <Sparkles size={16} /> Explicación con IA
+            </button>
+          </div>
+
+          {youtubeMode === "ia" && (
+            <p className={styles.youtubeHint} data-testid="youtube-ia-hint">
+              Este modo requiere que el video tenga subtítulos disponibles.
+            </p>
+          )}
+
+          <button
+            className={styles.btnYoutube}
+            data-testid="youtube-generate-btn"
+            onClick={handleGenerateYoutube}
+            disabled={!youtubeUrl.trim() || loading}
+          >
+            <Youtube size={18} /> Generar desde YouTube
           </button>
         </section>
 

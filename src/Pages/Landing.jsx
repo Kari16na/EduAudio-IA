@@ -11,6 +11,7 @@ export default function Landing({ onNavigate }) {
         rightContent={
           <button
             className={styles.navBtn}
+            data-testid="landing-login-btn"
             onClick={() => onNavigate("login")}
           >
             Iniciar Sesión
@@ -21,7 +22,7 @@ export default function Landing({ onNavigate }) {
       <main className={styles.hero}>
 
         {/* Ícono grande */}
-        <Headphones size={72} className={styles.icon} />
+        <Headphones size={72} className={styles.icon} data-testid="landing-icon" />
 
         {/* Títulos */}
         <h1 className={styles.titleLight}>Bienvenido a</h1>
@@ -37,6 +38,7 @@ export default function Landing({ onNavigate }) {
         {/* Botón principal */}
         <button
           className={styles.ctaBtn}
+          data-testid="landing-cta-btn"
           onClick={() => onNavigate("signup")}
         >
           Comenzar ahora
@@ -44,10 +46,10 @@ export default function Landing({ onNavigate }) {
 
         {/* Badges de formatos */}
         <div className={styles.badges}>
-          <span className={styles.badge}>
+          <span className={styles.badge} data-testid="landing-badge-pdf">
             <FileText size={16} /> PDF
           </span>
-          <span className={styles.badge}>
+          <span className={styles.badge} data-testid="landing-badge-word">
             <FileEdit size={16} /> Word
           </span>
         </div>

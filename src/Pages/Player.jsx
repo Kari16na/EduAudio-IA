@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Headphones } from "lucide-react";
+import { Headphones, ArrowLeft, SkipBack, SkipForward, Play, Pause } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import styles from "./Player.module.css";
 
@@ -28,8 +28,6 @@ function calcularPeso(palabra) {
 
 export default function Player({ onNavigate }) {
 
-  // Se memoriza para que la referencia del arreglo sea estable entre
-  // renders y pueda usarse directamente como dependencia de los hooks.
   const { audio, PARAGRAPHS } = useMemo(() => {
     const audioData = JSON.parse(localStorage.getItem("currentAudio") || "{}");
     const paragraphs = audioData.paragraphs?.length > 0
@@ -44,9 +42,6 @@ export default function Player({ onNavigate }) {
   const audioRef = useRef(null);
   const rafIdRef = useRef(null);
 
-  // Precalcula, una sola vez por documento, el peso de cada palabra y su
-  // peso acumulado (para poder ubicar rápido qué palabra corresponde a
-  // un punto dado del audio).
   const { PARRAFOS_PROCESADOS, pesosAcumulados, pesoTotal } = useMemo(() => {
     let acumulado = 0;
     const acumulados = [];
@@ -66,16 +61,12 @@ export default function Player({ onNavigate }) {
     };
   }, [PARAGRAPHS]);
 
-  // Tiempo "ajustado" para el cálculo de la palabra activa, compensando el desfase
   const adjustedTime = Math.max(0, currentTime + SYNC_OFFSET_SECONDS);
 
-  // Busca qué palabra corresponde al tiempo actual usando los pesos
-  // acumulados en vez de asumir que todas las palabras duran igual.
   const palabraGlobal = useMemo(() => {
     if (duration <= 0 || pesoTotal <= 0) return 0;
     const objetivo = (adjustedTime / duration) * pesoTotal;
 
-    // Búsqueda binaria sobre el arreglo de pesos acumulados (ya está ordenado)
     let lo = 0, hi = pesosAcumulados.length - 1;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
@@ -85,7 +76,6 @@ export default function Player({ onNavigate }) {
     return lo;
   }, [adjustedTime, duration, pesosAcumulados, pesoTotal]);
 
-  // Actualiza la duración cuando el audio carga metadata
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
@@ -96,9 +86,6 @@ export default function Player({ onNavigate }) {
     };
   }, []);
 
-  // Bucle con requestAnimationFrame: actualiza currentTime en cada frame
-  // mientras el audio está sonando, en vez de esperar al evento "timeupdate"
-  // (que dispara con poca frecuencia y se siente entrecortado).
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl || !isPlaying) return;
@@ -164,7 +151,7 @@ export default function Player({ onNavigate }) {
             onClick={() => onNavigate("audios")}
             data-testid="btn-back-to-audios"
           >
-            ← Mis Audios
+            <ArrowLeft size={16} /> Mis Audios
           </button>
         }
       />
@@ -221,7 +208,7 @@ export default function Player({ onNavigate }) {
             onClick={() => skip(-10)}
             data-testid="btn-skip-back"
           >
-            ⏮ 10s
+            <SkipBack size={16} /> 10s
           </button>
           <button
             className={styles.btnPlay}
@@ -229,14 +216,14 @@ export default function Player({ onNavigate }) {
             data-testid="btn-play-pause"
             data-playing={isPlaying}
           >
-            {isPlaying ? "⏸" : "▶"}
+            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
           </button>
           <button
             className={styles.btnSkip}
             onClick={() => skip(10)}
             data-testid="btn-skip-forward"
           >
-            10s ⏭
+            10s <SkipForward size={16} />
           </button>
         </div>
 
