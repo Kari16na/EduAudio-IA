@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages, Youtube, Volume2, Sparkles } from "lucide-react";
+import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import { API_URL } from "../config";
 import styles from "./Dashboard.module.css";
@@ -10,25 +10,29 @@ export default function Dashboard({ onNavigate }) {
   const [file,        setFile]        = useState(null);
   const [idioma,      setIdioma]      = useState("es");
   const [categoria,   setCategoria]   = useState("general");
-  const [youtubeUrl,  setYoutubeUrl]  = useState("");
-  const [youtubeMode, setYoutubeMode] = useState("original");
   const [loading,     setLoading]     = useState(false);
   const [totalAudios, setTotalAudios] = useState(0);
 
   useEffect(() => {
     async function contarAudios() {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/audios`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) setTotalAudios(data.length);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/audios`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) setTotalAudios(data.length);
+      } catch (error) {
+        console.error("Error al cargar contador de audios:", error);
+      }
     }
     contarAudios();
   }, []);
 
   function handleFile(e) {
-    setFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
   }
 
   async function handleGenerate() {
@@ -40,46 +44,25 @@ export default function Dashboard({ onNavigate }) {
       formData.append("document", file);
       formData.append("language", idioma);
       formData.append("category", categoria);
-      const res = await fetch(`${API_URL}/api/audios/generate`, {
+
+      const res = await fetch(`${API_URL}/audios/generate`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
-      const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
-      localStorage.setItem("currentAudio", JSON.stringify(data.audio));
-      onNavigate("audios");
-    } catch {
-      alert("Error al generar el audio.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  async function handleGenerateYoutube() {
-    if (!youtubeUrl.trim()) return;
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/audios/generate-youtube`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          url: youtubeUrl,
-          language: idioma,
-          category: categoria,
-          mode: youtubeMode
-        })
-      });
       const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
+
+      if (!res.ok) {
+        alert(data.message || data.error || "Ocurrió un error al procesar el documento.");
+        return;
+      }
+
       localStorage.setItem("currentAudio", JSON.stringify(data.audio));
       onNavigate("audios");
-    } catch {
-      alert("Error al generar el audio desde YouTube.");
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión al intentar generar el audio.");
     } finally {
       setLoading(false);
     }
@@ -211,53 +194,6 @@ export default function Dashboard({ onNavigate }) {
             disabled={!file || loading}
           >
             <Music size={18} /> Generar Audio con IA
-          </button>
-
-          <div className={styles.divider} />
-
-          <label className={styles.label}>O pega un link de YouTube:</label>
-          <input
-            className={styles.youtubeInput}
-            type="text"
-            data-testid="youtube-url-input"
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-          />
-
-          <label className={styles.label}>¿Qué quieres obtener del video?</label>
-          <div className={styles.languageSelector} data-testid="youtube-mode-selector">
-            <button
-              type="button"
-              className={youtubeMode === "original" ? styles.langBtnActive : styles.langBtn}
-              data-testid="youtube-mode-original-btn"
-              onClick={() => setYoutubeMode("original")}
-            >
-              <Volume2 size={16} /> Audio original
-            </button>
-            <button
-              type="button"
-              className={youtubeMode === "ia" ? styles.langBtnActive : styles.langBtn}
-              data-testid="youtube-mode-ia-btn"
-              onClick={() => setYoutubeMode("ia")}
-            >
-              <Sparkles size={16} /> Explicación con IA
-            </button>
-          </div>
-
-          {youtubeMode === "ia" && (
-            <p className={styles.youtubeHint} data-testid="youtube-ia-hint">
-              Este modo requiere que el video tenga subtítulos disponibles.
-            </p>
-          )}
-
-          <button
-            className={styles.btnYoutube}
-            data-testid="youtube-generate-btn"
-            onClick={handleGenerateYoutube}
-            disabled={!youtubeUrl.trim() || loading}
-          >
-            <Youtube size={18} /> Generar desde YouTube
           </button>
         </section>
 

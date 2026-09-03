@@ -1,5 +1,6 @@
 import { useState } from "react";
 import FormCard from "../Components/FormCard";
+import { API_URL } from "../config";
 import styles from "./Login.module.css";
 
 export default function ResetPassword({ onNavigate }) {
@@ -27,7 +28,8 @@ export default function ResetPassword({ onNavigate }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:3000/api/auth/reset-password", {
+      // Se reemplaza la URL de localhost por API_URL
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password })

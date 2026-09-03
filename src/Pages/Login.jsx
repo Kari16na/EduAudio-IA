@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { KeyRound, AlertCircle } from "lucide-react";
 import FormCard from "../Components/FormCard";
+import { API_URL } from "../config";
 import styles from "./Login.module.css";
 
 export default function Login({ onNavigate }) {
@@ -16,7 +17,8 @@ export default function Login({ onNavigate }) {
     }
     setError(null);
     try {
-      const res = await fetch("http://localhost:3000/api/users/login", {
+      // Se utiliza API_URL para reemplazar http://localhost:3000/api
+      const res = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })

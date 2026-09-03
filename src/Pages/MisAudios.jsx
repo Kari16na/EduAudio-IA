@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Play, Download, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import NavBar from "../Components/NavBar";
+import { API_URL } from "../config";
 import styles from "./MisAudios.module.css";
 
 export default function MisAudios({ onNavigate }) {
@@ -20,7 +21,7 @@ export default function MisAudios({ onNavigate }) {
     async function cargarAudios() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3000/api/audios", {
+        const res = await fetch(`${API_URL}/audios`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -39,7 +40,7 @@ export default function MisAudios({ onNavigate }) {
     if (!confirm("¿Seguro que quieres eliminar este audio?")) return;
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:3000/api/audios/${id}`, {
+      await fetch(`${API_URL}/audios/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -90,7 +91,7 @@ export default function MisAudios({ onNavigate }) {
     try {
       setGuardando(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/api/audios/${audioEditar._id}`, {
+      const res = await fetch(`${API_URL}/audios/${audioEditar._id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

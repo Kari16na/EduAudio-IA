@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera } from "lucide-react";
 import NavBar from "../Components/NavBar";
+import { API_URL } from "../config";
 import styles from "./Perfil.module.css";
 
 export default function Perfil({ onNavigate }) {
@@ -30,7 +31,7 @@ export default function Perfil({ onNavigate }) {
   useEffect(() => {
     async function cargar() {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/audios", {
+      const res = await fetch(`${API_URL}/audios`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -43,7 +44,7 @@ export default function Perfil({ onNavigate }) {
     setGuardandoNombre(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/users/update", {
+      const res = await fetch(`${API_URL}/users/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -84,7 +85,7 @@ export default function Perfil({ onNavigate }) {
     setCambiandoPassword(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/users/change-password", {
+      const res = await fetch(`${API_URL}/users/change-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -123,7 +124,7 @@ export default function Perfil({ onNavigate }) {
       const formData = new FormData();
       formData.append("photo", fotoFile);
 
-      const res = await fetch("http://localhost:3000/api/users/photo", {
+      const res = await fetch(`${API_URL}/users/photo`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData

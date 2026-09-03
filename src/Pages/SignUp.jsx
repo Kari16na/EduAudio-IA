@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import FormCard from "../Components/FormCard";
+import { API_URL } from "../config";
 import styles from "./SignUp.module.css";
 
 export default function SignUp({ onNavigate }) {
@@ -35,7 +36,7 @@ export default function SignUp({ onNavigate }) {
     }
     setError(null);
     try {
-      const res = await fetch("http://localhost:3000/api/users/register", {
+      const res = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName: name, email, password })

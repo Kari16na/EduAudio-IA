@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Lock, CheckCircle, AlertCircle } from "lucide-react";
 import FormCard from "../Components/FormCard";
 import styles from "./ForgotPassword.module.css";
+import { API_URL } from "../config";   // 👈 Importación de la constante
 
 export default function ForgotPassword({ onNavigate }) {
 
@@ -21,7 +22,7 @@ export default function ForgotPassword({ onNavigate }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:3000/api/auth/forgot-password", {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {   // 👈 Uso de API_URL
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
