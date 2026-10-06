@@ -1,5 +1,5 @@
 // routes/audioRoutes.js
-// Rutas CRUD de audios: listar, actualizar nombre y eliminar
+// Rutas CRUD de audios: listar, actualizar nombre, descargar y eliminar
 // Todas las rutas están protegidas con authMiddleware
 
 const express = require('express');
@@ -29,6 +29,31 @@ router.get('/', authMiddleware, async (req, res) => {
     res.json(audios);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// GET /api/audios/download/:id - Endpoint para descargar el archivo MP3 del disco
+router.get('/download/:id', async (req, res) => {
+  try {
+    const audio = await Audio.findById(req.params.id);
+    if (!audio) {
+      return res.status(404).send('Audio no encontrado en la base de datos.');
+    }
+
+    // Extraer el nombre del archivo de la propiedad audioUrl
+    const filename = path.basename(audio.audioUrl);
+    
+    // Buscar el archivo dentro de la carpeta public
+    const rutaArchivo = path.join(__dirname, '../public', filename);
+
+    if (!fs.existsSync(rutaArchivo)) {
+      return res.status(404).send('El archivo MP3 no existe físicamente en la carpeta public.');
+    }
+
+    // Forzar la descarga del archivo con res.download
+    res.download(rutaArchivo, `${audio.fileName}.mp3`);
+  } catch (error) {
+    res.status(500).send('Error interno al descargar el archivo.');
   }
 });
 

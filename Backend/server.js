@@ -13,8 +13,12 @@ const app = express();
 
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
-app.use('/public', express.static(path.join(__dirname, 'public')));
 
+// Exponer carpetas públicas y de subidas de forma estática
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Enrutadores de la API
 app.use('/api/users',           userRoutes);
 app.use('/api/audios',          audioRoutes);
 app.use('/api/audios/generate', generateRoutes);

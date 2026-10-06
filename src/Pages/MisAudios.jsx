@@ -50,10 +50,24 @@ export default function MisAudios({ onNavigate }) {
     }
   }
 
-  // Descargar audio real (fetch + blob), sin navegar fuera de la página
+  // Descargar audio real mediante Blob (Opción A)
   async function handleDownload(audio) {
     try {
-      const response = await fetch(audio.audioUrl);
+      if (!audio.audioUrl) {
+        alert("El archivo de audio no tiene una ruta válida.");
+        return;
+      }
+
+      // Si audioUrl es una ruta relativa, le anteponemos la URL del backend
+      const fullUrl = audio.audioUrl.startsWith("http")
+        ? audio.audioUrl
+        : `${API_URL}${audio.audioUrl.startsWith("/") ? "" : "/"}${audio.audioUrl}`;
+
+      const response = await fetch(fullUrl);
+      if (!response.ok) {
+        throw new Error("No se pudo obtener el archivo desde el servidor.");
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -64,7 +78,7 @@ export default function MisAudios({ onNavigate }) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("Error al descargar el audio.");
+      alert("El archivo físico no se encuentra en el servidor de Render (los audios antiguos se borran al reiniciar el servidor). Por favor, genera un audio nuevo.");
     }
   }
 
