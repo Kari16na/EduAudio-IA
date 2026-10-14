@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Search, Play, Download, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import { getAudios, deleteAudio, updateAudioName } from "../services/api";  
-import { API_URL } from "../config";   
 import styles from "./MisAudios.module.css";
 
 export default function MisAudios({ onNavigate }) {
@@ -47,12 +46,10 @@ export default function MisAudios({ onNavigate }) {
         alert("El archivo de audio no tiene una ruta válida.");
         return;
       }
-      const fullUrl = audio.audioUrl.startsWith("http")
-        ? audio.audioUrl
-        : `${API_URL}${audio.audioUrl.startsWith("/") ? "" : "/"}${audio.audioUrl}`;
 
-      const response = await fetch(fullUrl);
-      if (!response.ok) throw new Error("No se pudo obtener el archivo desde el servidor.");
+      // Usar directamente la URL de Cloudinary
+      const response = await fetch(audio.audioUrl);
+      if (!response.ok) throw new Error("No se pudo obtener el archivo desde Cloudinary.");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -64,7 +61,7 @@ export default function MisAudios({ onNavigate }) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("El archivo físico no se encuentra en el servidor de Render. Genera un audio nuevo.");
+      alert("Error al descargar el audio desde Cloudinary. Genera un audio nuevo.");
     }
   }
 
@@ -115,5 +112,70 @@ export default function MisAudios({ onNavigate }) {
     audio.fileName.toLowerCase().includes(search.toLowerCase())
   );
 
-  // 👉 Aquí sigue tu JSX (NavBar, lista de audios, modal, etc.)
+  return (
+    <div className={styles.page}>
+      <NavBar
+        onNavigate={onNavigate}
+        rightContent={
+          <button
+            className={styles.btnBack}
+            onClick={() => onNavigate("dashboard")}
+          >
+            <ArrowLeft size={16} /> Volver al Dashboard
+          </button>
+        }
+      />
+
+      <main className={styles.main}>
+        <h2>Mis Audios</h2>
+
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        {loading ? (
+          <p>Cargando...</p>
+        ) : (
+          <ul>
+            {filtered.map((audio) => (
+              <li key={audio._id}>
+                <p>{audio.fileName}</p>
+                <audio controls src={audio.audioUrl}></audio>
+                <button onClick={() => handlePlay(audio)}>
+                  <Play size={16} /> Escuchar
+                </button>
+                <button onClick={() => handleDownload(audio)}>
+                  <Download size={16} /> Descargar
+                </button>
+                <button onClick={() => handleAbrirEditar(audio)}>
+                  <Pencil size={16} /> Renombrar
+                </button>
+                <button onClick={() => handleDelete(audio._id)}>
+                  <Trash2 size={16} /> Eliminar
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+
+      {modalAbierto && (
+        <div className={styles.modal}>
+          <h3>Editar nombre</h3>
+          <input
+            type="text"
+            value={nuevoNombre}
+            onChange={(e) => setNuevoNombre(e.target.value)}
+          />
+          <button onClick={handleGuardarNombre} disabled={guardando}>
+            Guardar
+          </button>
+          <button onClick={handleCerrarModal}>Cancelar</button>
+        </div>
+      )}
+    </div>
+  );
 }
