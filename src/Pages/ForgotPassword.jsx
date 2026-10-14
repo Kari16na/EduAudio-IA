@@ -5,9 +5,8 @@ import styles from "./ForgotPassword.module.css";
 import { API_URL } from "../config";   // 👈 Importación de la constante
 
 export default function ForgotPassword({ onNavigate }) {
-
   const [email, setEmail] = useState("");
-  const [sent,  setSent]  = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,16 +21,19 @@ export default function ForgotPassword({ onNavigate }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {   // 👈 Uso de API_URL
+      // Se utiliza API_URL en lugar de localhost
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
       const data = await res.json();
+
       if (!res.ok) {
         setError(data.message);
         return;
       }
+
       setSent(true);
     } catch {
       setError("Error al conectar con el servidor.");
@@ -70,7 +72,6 @@ export default function ForgotPassword({ onNavigate }) {
   // Vista 1: formulario
   return (
     <FormCard onNavigate={onNavigate}>
-
       <div className={styles.header}>
         <div className={styles.headerIcon}>
           <Lock size={40} />
@@ -118,7 +119,6 @@ export default function ForgotPassword({ onNavigate }) {
           Volver al inicio de sesión
         </button>
       </div>
-
     </FormCard>
   );
 }

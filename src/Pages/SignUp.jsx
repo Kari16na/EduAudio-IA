@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";
+import { API_URL } from "../config";   // API_URL viene de process.env
 import styles from "./SignUp.module.css";
 
 export default function SignUp({ onNavigate }) {
-
-  const [name,            setName]            = useState("");
-  const [email,           setEmail]           = useState("");
-  const [password,        setPassword]        = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [acceptTerms,     setAcceptTerms]     = useState(false);
-  const [error,           setError]           = useState(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [error, setError] = useState(null);
 
   async function handleRegister() {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -36,13 +35,19 @@ export default function SignUp({ onNavigate }) {
     }
     setError(null);
     try {
+      // Se utiliza API_URL para reemplazar localhost
       const res = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName: name, email, password })
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message); return; }
+
+      if (!res.ok) {
+        setError(data.message);
+        return;
+      }
+
       onNavigate("login");
     } catch {
       setError("Error al conectar con el servidor.");
@@ -51,19 +56,18 @@ export default function SignUp({ onNavigate }) {
 
   function getPasswordLevel() {
     if (password.length === 0) return 0;
-    if (password.length < 4)   return 1;
-    if (password.length < 8)   return 2;
-    if (password.length < 12)  return 3;
+    if (password.length < 4) return 1;
+    if (password.length < 8) return 2;
+    if (password.length < 12) return 3;
     return 4;
   }
 
   const passwordLevel = getPasswordLevel();
-  const levelLabels   = ["", "Muy débil", "Débil", "Media", "Fuerte"];
-  const levelClasses  = ["", styles.level1, styles.level2, styles.level3, styles.level4];
+  const levelLabels = ["", "Muy débil", "Débil", "Media", "Fuerte"];
+  const levelClasses = ["", styles.level1, styles.level2, styles.level3, styles.level4];
 
   return (
     <FormCard onNavigate={onNavigate}>
-
       <div className={styles.header}>
         <div className={styles.headerIcon}>
           <UserPlus size={40} />
@@ -135,7 +139,8 @@ export default function SignUp({ onNavigate }) {
         <input
           className={`${styles.input} ${
             confirmPassword.length > 0 && password !== confirmPassword
-              ? styles.inputError : ""
+              ? styles.inputError
+              : ""
           }`}
           type="password"
           data-testid="signup-confirm-password"
@@ -169,7 +174,11 @@ export default function SignUp({ onNavigate }) {
 
       {error && <div className={styles.error} data-testid="signup-error">⚠️ {error}</div>}
 
-      <button className={styles.btnPrimary} data-testid="signup-submit" onClick={handleRegister}>
+      <button
+        className={styles.btnPrimary}
+        data-testid="signup-submit"
+        onClick={handleRegister}
+      >
         Crear cuenta
       </button>
 
@@ -179,7 +188,6 @@ export default function SignUp({ onNavigate }) {
           Inicia sesión
         </button>
       </p>
-
     </FormCard>
   );
 }

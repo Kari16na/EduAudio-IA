@@ -4,8 +4,7 @@ const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
+const cloudinary = require('../config/cloudinary'); // 👈 Importamos Cloudinary
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -99,7 +98,7 @@ router.put('/change-password', async (req, res) => {
   }
 });
 
-// Subir / actualizar foto de perfil
+// Subir / actualizar foto de perfil con Cloudinary
 router.post('/photo', upload.single('photo'), async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -111,35 +110,25 @@ router.post('/photo', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ message: "Debes subir una imagen." });
     }
 
-    const publicPath = path.join(__dirname, '../public');
-    if (!fs.existsSync(publicPath)) {
-      fs.mkdirSync(publicPath);
-    }
+    // Subir imagen a Cloudinary
+    const result = await cloudinary.uploader.upload_stream(
+      { folder: "eduaudio_profiles" },
+      async (error, uploadResult) => {
+        if (error) return res.status(500).json({ message: error.message });
 
-    // Eliminar foto anterior si existe y es un archivo local propio
-    const userActual = await User.findById(decoded.id);
-    if (userActual?.profilePhoto?.includes('/public/')) {
-      const rutaAnterior = path.join(publicPath, path.basename(userActual.profilePhoto));
-      if (fs.existsSync(rutaAnterior)) {
-        fs.unlinkSync(rutaAnterior);
+        const user = await User.findByIdAndUpdate(
+          decoded.id,
+          { profilePhoto: uploadResult.secure_url },
+          { new: true }
+        );
+
+        res.json({ message: "Foto actualizada correctamente.", photoUrl: uploadResult.secure_url, user });
       }
-    }
-
-    const extension = path.extname(req.file.originalname) || '.jpg';
-    const photoFileName = `photo_${decoded.id}_${Date.now()}${extension}`;
-    const photoPath = path.join(publicPath, photoFileName);
-
-    fs.writeFileSync(photoPath, req.file.buffer);
-
-    const photoUrl = `${req.protocol}://${req.get('host')}/public/${photoFileName}`;
-
-    const user = await User.findByIdAndUpdate(
-      decoded.id,
-      { profilePhoto: photoUrl },
-      { new: true }
     );
 
-    res.json({ message: "Foto actualizada correctamente.", photoUrl, user });
+    // Usamos stream para subir el buffer
+    result.end(req.file.buffer);
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

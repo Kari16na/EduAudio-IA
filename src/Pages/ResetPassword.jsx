@@ -1,16 +1,15 @@
 import { useState } from "react";
 import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";
+import { API_URL } from "../config";   // API_URL viene de process.env
 import styles from "./Login.module.css";
 
 export default function ResetPassword({ onNavigate }) {
-
   const token = new URLSearchParams(window.location.search).get("token");
-  const [password,        setPassword]        = useState("");
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error,           setError]           = useState(null);
-  const [success,         setSuccess]         = useState(false);
-  const [loading,         setLoading]         = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function handleReset() {
     if (!password.trim() || !confirmPassword.trim()) {
@@ -28,14 +27,19 @@ export default function ResetPassword({ onNavigate }) {
     setLoading(true);
     setError(null);
     try {
-      // Se reemplaza la URL de localhost por API_URL
+      // Se utiliza API_URL para reemplazar localhost
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password })
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message); return; }
+
+      if (!res.ok) {
+        setError(data.message);
+        return;
+      }
+
       setSuccess(true);
     } catch {
       setError("Error al conectar con el servidor.");

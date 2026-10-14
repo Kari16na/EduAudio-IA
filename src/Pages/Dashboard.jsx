@@ -1,26 +1,22 @@
 import { useState, useEffect } from "react";
 import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages } from "lucide-react";
 import NavBar from "../Components/NavBar";
-import { API_URL } from "../config";
+import { getAudios, generateAudio } from "../services/api";   // 👈 Importamos funciones del api.js
 import styles from "./Dashboard.module.css";
 
 export default function Dashboard({ onNavigate }) {
-
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const [file,        setFile]        = useState(null);
-  const [idioma,      setIdioma]      = useState("es");
-  const [categoria,   setCategoria]   = useState("general");
-  const [loading,     setLoading]     = useState(false);
+  const [file, setFile] = useState(null);
+  const [idioma, setIdioma] = useState("es");
+  const [categoria, setCategoria] = useState("general");
+  const [loading, setLoading] = useState(false);
   const [totalAudios, setTotalAudios] = useState(0);
 
   useEffect(() => {
     async function contarAudios() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_URL}/audios`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
+        const data = await getAudios(token);   // 👈 usamos la función centralizada
         if (Array.isArray(data)) setTotalAudios(data.length);
       } catch (error) {
         console.error("Error al cargar contador de audios:", error);
@@ -40,20 +36,9 @@ export default function Dashboard({ onNavigate }) {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("document", file);
-      formData.append("language", idioma);
-      formData.append("category", categoria);
+      const data = await generateAudio(token, file, idioma, categoria);   // 👈 usamos la función centralizada
 
-      const res = await fetch(`${API_URL}/audios/generate`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (!data || data.error) {
         alert(data.message || data.error || "Ocurrió un error al procesar el documento.");
         return;
       }
@@ -70,8 +55,6 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div className={styles.page}>
-
-      {/* Spinner de carga */}
       {loading && (
         <div className={styles.spinnerOverlay}>
           <div className={styles.spinnerCard}>
@@ -116,7 +99,6 @@ export default function Dashboard({ onNavigate }) {
       />
 
       <main className={styles.main}>
-
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>
             <UploadCloud size={20} /> Subir Documento
@@ -158,7 +140,6 @@ export default function Dashboard({ onNavigate }) {
           </select>
 
           <label className={styles.label}>Selecciona o arrastra tu archivo:</label>
-
           <label className={styles.dropZone}>
             <input
               type="file"
@@ -220,7 +201,6 @@ export default function Dashboard({ onNavigate }) {
             Ver toda mi biblioteca
           </button>
         </section>
-
       </main>
     </div>
   );

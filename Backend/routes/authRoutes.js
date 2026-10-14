@@ -9,8 +9,8 @@ const bcrypt = require('bcryptjs');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.EMAIL_USER,   // tu correo Gmail
+    pass: process.env.EMAIL_PASS    // App Password de Gmail
   }
 });
 
@@ -30,7 +30,8 @@ router.post('/forgot-password', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const linkRecuperacion = `http://localhost:5173/reset-password?token=${token}`;
+    // ⚠️ Cambiado: ahora apunta a tu dominio en Vercel
+    const linkRecuperacion = `https://edu-audio-ia.vercel.app/reset-password?token=${token}`;
 
     await transporter.sendMail({
       from: `"EduAudio IA" <${process.env.EMAIL_USER}>`,

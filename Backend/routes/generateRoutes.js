@@ -7,16 +7,14 @@ const mammoth = require('mammoth');
 const jwt = require('jsonwebtoken');
 const Audio = require('../models/Audio');
 const { generarAudioDesdeTexto } = require('../services/audioGenerationService');
+const cloudinary = require('../config/cloudinary'); // 👈 Importamos Cloudinary
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Middleware
+// Middleware de autenticación
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'No autorizado' });
-  }
+  if (!token) return res.status(401).json({ message: 'No autorizado' });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -27,6 +25,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// POST /api/generate - Generar audio desde documento
 router.post('/', authMiddleware, upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
@@ -49,13 +48,12 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
     }
 
     if (!texto || texto.trim().length === 0) {
-      return res.status(400).json({
-        message: 'No se pudo extraer texto del documento.'
-      });
+      return res.status(400).json({ message: 'No se pudo extraer texto del documento.' });
     }
 
     const fileName = req.file.originalname;
 
+    // Generar audio con tu servicio
     const { audioFileName, textoAudio, parrafos } = await generarAudioDesdeTexto({
       texto,
       idioma,
@@ -64,8 +62,16 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
       fileName
     });
 
-    const audioUrl = `${req.protocol}://${req.get('host')}/public/${audioFileName}`;
+    // Subir el archivo generado a Cloudinary
+    const result = await cloudinary.uploader.upload(`./public/${audioFileName}`, {
+      resource_type: "video", // Cloudinary maneja audios como "video"
+      folder: "eduaudio_audios"
+    });
 
+    // Usar la URL segura de Cloudinary
+    const audioUrl = result.secure_url;
+
+    // Guardar en MongoDB
     const nuevoAudio = new Audio({
       userId: req.userId,
       fileName,

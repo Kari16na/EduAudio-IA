@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { KeyRound, AlertCircle } from "lucide-react";
 import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";
+import { API_URL } from "../config";   // ahora API_URL viene de process.env
 import styles from "./Login.module.css";
 
 export default function Login({ onNavigate }) {
-
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState(null);
+  const [error, setError] = useState(null);
 
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {
@@ -17,14 +16,19 @@ export default function Login({ onNavigate }) {
     }
     setError(null);
     try {
-      // Se utiliza API_URL para reemplazar http://localhost:3000/api
+      // Se utiliza API_URL para reemplazar localhost
       const res = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message); return; }
+
+      if (!res.ok) {
+        setError(data.message);
+        return;
+      }
+
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       onNavigate("dashboard");
@@ -35,7 +39,6 @@ export default function Login({ onNavigate }) {
 
   return (
     <FormCard onNavigate={onNavigate}>
-
       <div className={styles.header}>
         <div className={styles.headerIcon}>
           <KeyRound size={40} />
@@ -75,22 +78,31 @@ export default function Login({ onNavigate }) {
         </div>
       )}
 
-      <button className={styles.btnPrimary} data-testid="login-submit" onClick={handleLogin}>
+      <button
+        className={styles.btnPrimary}
+        data-testid="login-submit"
+        onClick={handleLogin}
+      >
         Entrar
       </button>
 
       <div className={styles.links}>
-        <button className={styles.btnLink} onClick={() => onNavigate("forgot")}>
+        <button
+          className={styles.btnLink}
+          onClick={() => onNavigate("forgot")}
+        >
           ¿Olvidaste tu contraseña?
         </button>
         <span className={styles.linkText}>
           ¿No tienes una cuenta?{" "}
-          <button className={styles.btnLink} onClick={() => onNavigate("signup")}>
+          <button
+            className={styles.btnLink}
+            onClick={() => onNavigate("signup")}
+          >
             Regístrate
           </button>
         </span>
       </div>
-
     </FormCard>
   );
 }
