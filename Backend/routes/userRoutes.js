@@ -1,114 +1,142 @@
-import { useState } from "react";
-import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";
-import styles from "./ResetPassword.module.css";
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
+const authMiddleware = require('../middleware/auth');
 
-export default function ResetPassword({ onNavigate }) {
-  const token = new URLSearchParams(window.location.search).get("token");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+const router = express.Router();
 
-  async function handleReset() {
-    if (!token) {
-      setError("El enlace para restablecer la contraseña es inválido o ha expirado.");
-      return;
+router.post('/register', async (req, res) => {
+  try {
+    const { fullName, email, password } = req.body || {};
+
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
     }
 
-    if (!password.trim() || !confirmPassword.trim()) {
-      setError("Por favor completa todos los campos.");
-      return;
-    }
     if (password.length < 8) {
-      setError("La contraseña debe tener mínimo 8 caracteres.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
+      return res.status(400).json({ message: 'La contraseña debe tener mínimo 8 caracteres.' });
     }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword: password })
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message);
-        return;
-      }
-
-      setSuccess(true);
-    } catch {
-      setError("Error al conectar con el servidor.");
-    } finally {
-      setLoading(false);
+    const emailNormalized = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: emailNormalized });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Ya existe una cuenta con ese correo.' });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({
+      fullName: fullName.trim(),
+      email: emailNormalized,
+      password: hashedPassword,
+    });
+
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
+
+    return res.status(201).json({
+      message: 'Usuario registrado correctamente.',
+      token,
+      user: { id: newUser._id, fullName: newUser.fullName, email: newUser.email },
+    });
+  } catch (error) {
+    console.error('Error registrando usuario:', error.message);
+    return res.status(500).json({ message: 'Error al registrar usuario.' });
   }
+});
 
-  if (success) {
-    return (
-      <FormCard onNavigate={onNavigate}>
-        <div className={styles.successBox}>
-          <h2 className={styles.title}>¡Contraseña actualizada!</h2>
-          <p>Ya puedes iniciar sesión con tu nueva contraseña.</p>
-          <button
-            className={styles.btnPrimary}
-            onClick={() => onNavigate("login")}
-          >
-            Ir al inicio de sesión
-          </button>
-        </div>
-      </FormCard>
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email y contraseña son obligatorios.' });
+    }
+
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ message: 'Credenciales inválidas.' });
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password);
+    if (!passwordMatches) {
+      return res.status(401).json({ message: 'Credenciales inválidas.' });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
+
+    return res.json({
+      message: 'Inicio de sesión exitoso.',
+      token,
+      user: { id: user._id, fullName: user.fullName, email: user.email, profilePhoto: user.profilePhoto || '' },
+    });
+  } catch (error) {
+    console.error('Error iniciando sesión:', error.message);
+    return res.status(500).json({ message: 'Error al iniciar sesión.' });
+  }
+});
+
+router.put('/update', authMiddleware, async (req, res) => {
+  try {
+    const { fullName } = req.body || {};
+    if (!fullName || !fullName.trim()) {
+      return res.status(400).json({ message: 'El nombre completo es obligatorio.' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      { fullName: fullName.trim() },
+      { new: true }
     );
+
+    return res.json({
+      message: 'Perfil actualizado correctamente.',
+      user: { id: updatedUser._id, fullName: updatedUser.fullName, email: updatedUser.email },
+    });
+  } catch (error) {
+    console.error('Error actualizando usuario:', error.message);
+    return res.status(500).json({ message: 'Error al actualizar perfil.' });
   }
+});
 
-  return (
-    <FormCard onNavigate={onNavigate}>
-      <div className={styles.header}>
-        <div className={styles.headerIcon}>🔑</div>
-        <h2 className={styles.title}>Nueva contraseña</h2>
-        <p className={styles.subtitle}>Ingresa tu nueva contraseña</p>
-      </div>
+router.put('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'Contraseña actual y nueva inválidas.' });
+    }
 
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Nueva contraseña:</label>
-        <input
-          className={styles.input}
-          type="password"
-          placeholder="Mínimo 8 caracteres"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
 
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Confirmar contraseña:</label>
-        <input
-          className={styles.input}
-          type="password"
-          placeholder="Repite tu contraseña"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-      </div>
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      return res.status(401).json({ message: 'La contraseña actual es incorrecta.' });
+    }
 
-      {error && <div className={styles.error}>⚠️ {error}</div>}
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
 
-      <button
-        className={styles.btnPrimary}
-        onClick={handleReset}
-        disabled={loading}
-      >
-        {loading ? "Guardando..." : "Guardar nueva contraseña"}
-      </button>
-    </FormCard>
-  );
-}
+    return res.json({ message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error cambiando contraseña:', error.message);
+    return res.status(500).json({ message: 'Error al cambiar contraseña.' });
+  }
+});
+
+router.post('/photo', authMiddleware, async (req, res) => {
+  try {
+    const { photo } = req.body || {};
+    if (!photo) {
+      return res.status(400).json({ message: 'La foto es obligatoria.' });
+    }
+
+    const user = await User.findByIdAndUpdate(req.userId, { profilePhoto: photo }, { new: true });
+    return res.json({ message: 'Foto de perfil actualizada.', user });
+  } catch (error) {
+    console.error('Error actualizando foto de perfil:', error.message);
+    return res.status(500).json({ message: 'Error al actualizar foto.' });
+  }
+});
+
+module.exports = router;

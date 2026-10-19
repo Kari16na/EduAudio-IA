@@ -1,19 +1,18 @@
-const cloudinary = require('cloudinary').v2;
+const jwt = require('jsonwebtoken');
 
-const config = {
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECRET,
+module.exports = function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token) {
+    return res.status(401).json({ message: 'No autorizado' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+    req.userId = decoded.id;
+    return next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Token inválido' });
+  }
 };
-
-const missing = Object.entries(config)
-  .filter(([, value]) => !value)
-  .map(([key]) => key);
-
-if (missing.length > 0) {
-  console.warn('Cloudinary no configurado completamente. Faltan variables:', missing.join(', '));
-}
-
-cloudinary.config(config);
-
-module.exports = cloudinary;

@@ -1,62 +1,89 @@
-require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const axios = require('axios');
+const User = require('../models/user');
 
-const userRoutes     = require('./routes/userRoutes');
-const audioRoutes    = require('./routes/audioRoutes');
-const generateRoutes = require('./routes/generateRoutes');
-const authRoutes     = require('./routes/authRoutes');
+const router = express.Router();
 
-const app = express();
-
-const requiredEnv = ['MONGODB_URL', 'JWT_SECRET'];
-const missingEnv = requiredEnv.filter((key) => !process.env[key]);
-
-if (missingEnv.length > 0) {
-  console.warn('Faltan variables de entorno:', missingEnv.join(', '));
-}
-
-const frontendOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean)
-  .concat(['http://localhost:5173', 'http://localhost:3000']);
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || frontendOrigins.includes(origin)) {
-      callback(null, true);
-      return;
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ message: 'Debes proporcionar un correo válido.' });
     }
 
-    callback(null, true);
-  },
-  credentials: true,
-}));
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ message: 'No existe una cuenta con ese correo.' });
+    }
 
-app.use(express.json({ limit: '1mb' }));
+    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const token = jwt.sign({ id: user._id, purpose: 'reset' }, secret, { expiresIn: '1h' });
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', db: mongoose.connection.readyState === 1 });
-});
+    if (!process.env.BREVO_API_KEY) {
+      return res.json({
+        message: 'Correo enviado exitosamente.',
+        devMode: true,
+        resetLink,
+      });
+    }
 
-app.use('/api/audios/generate', generateRoutes);
-app.use('/api/audios',          audioRoutes);
-app.use('/api/users',           userRoutes);
-app.use('/api/auth',            authRoutes);
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: 'EduAudio IA', email: process.env.BREVO_SENDER || 'no-reply@eduaudio.com' },
+      to: [{ email: user.email }],
+      subject: 'Recuperar contraseña - EduAudio IA',
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2 style="color: #4A3F8F;">🎧 EduAudio IA</h2>
+          <p>Hola <strong>${user.fullName}</strong>,</p>
+          <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+          <p>Haz clic en el botón para continuar:</p>
+          <a href="${resetLink}" style="display:inline-block;background:#F5A623;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0;">Restablecer contraseña</a>
+          <p style="color:#888;font-size:13px;">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
+        </div>
+      `,
+    }, {
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+    });
 
-app.use((err, req, res, next) => {
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ message: 'El archivo es demasiado grande.' });
+    return res.json({ message: 'Correo enviado exitosamente.' });
+  } catch (error) {
+    console.error('Error enviando correo:', error.message);
+    return res.status(500).json({ message: 'Error al enviar el correo.' });
   }
-  console.error(err.message);
-  res.status(err.status || 500).json({ message: err.message || 'Error interno' });
 });
 
-mongoose.connect(process.env.MONGODB_URL, { serverSelectionTimeoutMS: 10000 })
-  .then(() => console.log('MongoDB conectado'))
-  .catch((err) => console.error('Error al conectar a MongoDB:', err.message));
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body || {};
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Servidor corriendo en puerto ${PORT}`));
+    if (!token) {
+      return res.status(400).json({ message: 'El enlace para restablecer la contraseña es inválido o ha expirado.' });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'La nueva contraseña debe tener mínimo 8 caracteres.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+    if (decoded.purpose !== 'reset') {
+      return res.status(400).json({ message: 'Token inválido para restablecer la contraseña.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await User.findByIdAndUpdate(decoded.id, { password: hashedPassword });
+
+    return res.json({ message: 'Contraseña actualizada exitosamente.' });
+  } catch (error) {
+    console.error('Error en reset-password:', error.message);
+    return res.status(400).json({ message: 'Token inválido o expirado.' });
+  }
+});
+
+module.exports = router;
