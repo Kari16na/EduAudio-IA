@@ -1,7 +1,7 @@
 import { useState } from "react";
 import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";   // API_URL viene de process.env
-import styles from "./Login.module.css";
+import { API_URL } from "../config";
+import styles from "./ResetPassword.module.css";
 
 export default function ResetPassword({ onNavigate }) {
   const token = new URLSearchParams(window.location.search).get("token");
@@ -24,10 +24,10 @@ export default function ResetPassword({ onNavigate }) {
       setError("Las contraseñas no coinciden.");
       return;
     }
+
     setLoading(true);
     setError(null);
     try {
-      // Se utiliza API_URL para reemplazar localhost
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,14 +51,9 @@ export default function ResetPassword({ onNavigate }) {
   if (success) {
     return (
       <FormCard onNavigate={onNavigate}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-          <h2 style={{ color: "#2C2C4A", marginBottom: 12 }}>
-            ¡Contraseña actualizada!
-          </h2>
-          <p style={{ color: "#888", marginBottom: 24 }}>
-            Ya puedes iniciar sesión con tu nueva contraseña.
-          </p>
+        <div className={styles.successBox}>
+          <h2 className={styles.title}>¡Contraseña actualizada!</h2>
+          <p>Ya puedes iniciar sesión con tu nueva contraseña.</p>
           <button
             className={styles.btnPrimary}
             onClick={() => onNavigate("login")}

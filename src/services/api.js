@@ -1,4 +1,3 @@
-// src/services/api.js
 import { API_URL } from "../config";
 
 // 🔐 Autenticación
@@ -59,6 +58,34 @@ export async function generateAudio(token, file, idioma, categoria) {
   });
   return res.json();
 }
+
+// 📥 Descargar audio (redirige al backend)
+export function downloadAudio(token, audioId) {
+  window.location.href = `${API_URL}/audios/download/${audioId}?token=${token}`;
+}
+
+// 🗑️ Eliminar audio
+export async function deleteAudio(token, audioId) {
+  const res = await fetch(`${API_URL}/audios/${audioId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+}
+
+// ✏️ Actualizar nombre de audio
+export async function updateAudioName(token, audioId, fileName) {
+  const res = await fetch(`${API_URL}/audios/${audioId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ fileName })
+  });
+  return res.json();
+}
+
 // 👤 Perfil
 export async function getAudiosCount(token) {
   const res = await fetch(`${API_URL}/audios`, {

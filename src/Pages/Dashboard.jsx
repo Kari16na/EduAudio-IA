@@ -9,6 +9,7 @@ export default function Dashboard({ onNavigate }) {
   const [file, setFile] = useState(null);
   const [idioma, setIdioma] = useState("es");
   const [categoria, setCategoria] = useState("general");
+  const [modo, setModo] = useState("resumen"); // 👈 nuevo estado para elegir modo
   const [loading, setLoading] = useState(false);
   const [totalAudios, setTotalAudios] = useState(0);
 
@@ -36,7 +37,8 @@ export default function Dashboard({ onNavigate }) {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const data = await generateAudio(token, file, idioma, categoria);   // 👈 usamos la función centralizada
+      // 👇 ahora pasamos también el modo
+      const data = await generateAudio(token, file, idioma, categoria, modo);
 
       if (!data || data.error) {
         alert(data.message || data.error || "Ocurrió un error al procesar el documento.");
@@ -63,7 +65,7 @@ export default function Dashboard({ onNavigate }) {
               <Bot size={20} /> Analizando documento...
             </p>
             <p className={styles.spinnerSubtitle}>
-              La IA está resumiendo tu documento y generando el audio
+              La IA está procesando tu documento y generando el audio
             </p>
           </div>
         </div>
@@ -104,10 +106,11 @@ export default function Dashboard({ onNavigate }) {
             <UploadCloud size={20} /> Subir Documento
           </h2>
           <p className={styles.cardSubtitle}>
-            Sube tu archivo PDF o Word y la IA lo resumirá y convertirá en audio.
+            Sube tu archivo PDF o Word y elige cómo quieres generar el audio.
           </p>
 
-          <label className={styles.label}>Idioma del resumen y el audio:</label>
+          {/* Idioma */}
+          <label className={styles.label}>Idioma del audio:</label>
           <div className={styles.languageSelector} data-testid="language-selector">
             <button
               type="button"
@@ -127,6 +130,7 @@ export default function Dashboard({ onNavigate }) {
             </button>
           </div>
 
+          {/* Categoría */}
           <label className={styles.label}>Tipo de contenido:</label>
           <select
             className={styles.categorySelect}
@@ -136,9 +140,20 @@ export default function Dashboard({ onNavigate }) {
           >
             <option value="general">General</option>
             <option value="idiomas">Idiomas</option>
-            <option value="programacion">Programación</option>
           </select>
 
+          {/* Nuevo selector de modo */}
+          <label className={styles.label}>Modo de generación:</label>
+          <select
+            className={styles.modeSelect}
+            value={modo}
+            onChange={(e) => setModo(e.target.value)}
+          >
+            <option value="normal">Audio completo</option>
+            <option value="resumen">Resumen + Audio</option>
+          </select>
+
+          {/* Subida de archivo */}
           <label className={styles.label}>Selecciona o arrastra tu archivo:</label>
           <label className={styles.dropZone}>
             <input
@@ -174,7 +189,7 @@ export default function Dashboard({ onNavigate }) {
             onClick={handleGenerate}
             disabled={!file || loading}
           >
-            <Music size={18} /> Generar Audio con IA
+            <Music size={18} /> Generar Audio
           </button>
         </section>
 

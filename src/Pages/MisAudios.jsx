@@ -3,6 +3,7 @@ import { Search, Play, Download, Pencil, Trash2, ArrowLeft } from "lucide-react"
 import NavBar from "../Components/NavBar";
 import { getAudios, deleteAudio, updateAudioName } from "../services/api";  
 import styles from "./MisAudios.module.css";
+import { API_URL } from "../config"; // 👈 Importamos API_URL
 
 export default function MisAudios({ onNavigate }) {
   const [audios, setAudios] = useState([]);
@@ -40,29 +41,15 @@ export default function MisAudios({ onNavigate }) {
     }
   }
 
-  async function handleDownload(audio) {
-    try {
-      if (!audio.audioUrl) {
-        alert("El archivo de audio no tiene una ruta válida.");
-        return;
-      }
-
-      // Usar directamente la URL de Cloudinary
-      const response = await fetch(audio.audioUrl);
-      if (!response.ok) throw new Error("No se pudo obtener el archivo desde Cloudinary.");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${audio.fileName}.mp3`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch {
-      alert("Error al descargar el audio desde Cloudinary. Genera un audio nuevo.");
+  // ✅ Nueva versión: descarga usando la ruta del backend
+  function handleDownload(audio) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("No estás autenticado.");
+      return;
     }
+    // Redirige al backend, que a su vez redirige a Cloudinary
+    window.location.href = `${API_URL}/audios/download/${audio._id}?token=${token}`;
   }
 
   function handleAbrirEditar(audio) {

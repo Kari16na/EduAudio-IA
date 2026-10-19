@@ -1,20 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const axios = require('axios');
 
-// Configurar el transportador de email
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,   // tu correo Gmail
-    pass: process.env.EMAIL_PASS    // App Password de Gmail
-  }
-});
-
-// Enviar correo de recuperación
+// Enviar correo de recuperación con Brevo
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -30,14 +21,15 @@ router.post('/forgot-password', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    // ⚠️ Cambiado: ahora apunta a tu dominio en Vercel
+    // Enlace de recuperación (ajusta tu dominio si cambia)
     const linkRecuperacion = `https://edu-audio-ia.vercel.app/reset-password?token=${token}`;
 
-    await transporter.sendMail({
-      from: `"EduAudio IA" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Recuperar contraseña - EduAudio IA',
-      html: `
+    // Llamada a la API de Brevo
+    await axios.post("https://api.brevo.com/v3/smtp/email", {
+      sender: { name: "EduAudio IA", email: "no-reply@eduaudio.com" },
+      to: [{ email }],
+      subject: "Recuperar contraseña - EduAudio IA",
+      htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
           <h2 style="color: #4A3F8F;">🎧 EduAudio IA</h2>
           <p>Hola <strong>${user.fullName}</strong>,</p>
@@ -54,6 +46,11 @@ router.post('/forgot-password', async (req, res) => {
           </p>
         </div>
       `
+    }, {
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json"
+      }
     });
 
     res.json({ message: 'Correo enviado exitosamente.' });
@@ -69,10 +66,13 @@ router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.findByIdAndUpdate(decoded.id, { password: hashedPassword });
+
     res.json({ message: 'Contraseña actualizada exitosamente.' });
   } catch (error) {
+    console.error('Error en reset-password:', error.message);
     res.status(400).json({ message: 'Token inválido o expirado.' });
   }
 });

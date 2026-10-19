@@ -6,7 +6,7 @@ const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const jwt = require('jsonwebtoken');
 const Audio = require('../models/Audio');
-const { generarAudioDesdeTexto } = require('../services/audioGenerationService');
+const { generarAudioDesdeTexto, parsearYLimpiar, resumirConGemini, generarArchivoAudioMp3 } = require('../services/audioGenerationService');
 const cloudinary = require('../config/cloudinary'); // 👈 Importamos Cloudinary
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -33,8 +33,11 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
     }
 
     const idioma = req.body.language === 'en' ? 'en' : 'es';
-    const categoriasValidas = ['general', 'idiomas', 'programacion'];
+    const categoriasValidas = ['general', 'idiomas'];
     const categoria = categoriasValidas.includes(req.body.category) ? req.body.category : 'general';
+
+    // 👇 nuevo: modo de generación
+    const modo = req.body.modo === 'normal' ? 'normal' : 'resumen';
 
     let texto = '';
     const mimetype = req.file.mimetype;
@@ -53,23 +56,22 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
 
     const fileName = req.file.originalname;
 
-    // Generar audio con tu servicio
-    const { audioFileName, textoAudio, parrafos } = await generarAudioDesdeTexto({
-      texto,
-      idioma,
-      categoria,
-      userId: req.userId,
-      fileName
-    });
+    let textoAudio, parrafos;
 
-    // Subir el archivo generado a Cloudinary
-    const result = await cloudinary.uploader.upload(`./public/${audioFileName}`, {
-      resource_type: "video", // Cloudinary maneja audios como "video"
-      folder: "eduaudio_audios"
-    });
+    if (modo === 'normal') {
+      // Audio completo con todo el documento
+      textoAudio = texto;
+      parrafos = [texto];
+    } else {
+      // Resumen con Gemini
+      const resumenCompleto = await resumirConGemini(texto, idioma, categoria);
+      const parsed = parsearYLimpiar(resumenCompleto);
+      textoAudio = parsed.textoAudio;
+      parrafos = parsed.parrafos;
+    }
 
-    // Usar la URL segura de Cloudinary
-    const audioUrl = result.secure_url;
+    // Generar archivo de audio y subir a Cloudinary
+    const audioUrl = await generarArchivoAudioMp3({ textoAudio, idioma, userId: req.userId, fileName });
 
     // Guardar en MongoDB
     const nuevoAudio = new Audio({

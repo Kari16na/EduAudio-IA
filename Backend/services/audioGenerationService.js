@@ -5,17 +5,14 @@ const Audio = require('../models/Audio');
 const cloudinary = require('../config/cloudinary'); // 👈 Importamos Cloudinary
 
 // Instrucciones extra según el tipo de contenido (categoría), en el idioma
-// de salida elegido, para que el estilo de la explicación se ajuste al tema
 const ESTILOS = {
   es: {
     general: '',
-    idiomas: ' Ten en cuenta que el documento trata sobre el aprendizaje de un idioma...',
-    programacion: ' Ten en cuenta que el documento trata sobre programación...'
+    idiomas: ' Ten en cuenta que el documento trata sobre el aprendizaje de un idioma...'
   },
   en: {
     general: '',
-    idiomas: ' Keep in mind that the document is about language learning...',
-    programacion: ' Keep in mind that the document is about programming...'
+    idiomas: ' Keep in mind that the document is about language learning...'
   }
 };
 
@@ -73,7 +70,6 @@ async function generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName }) 
 
   const audioExistente = await Audio.findOne({ userId, fileName });
   if (audioExistente) {
-    // Eliminar de Cloudinary si ya existía
     const publicId = audioExistente.audioUrl.split('/').pop().split('.')[0];
     await cloudinary.uploader.destroy(`eduaudio_audios/${publicId}`, { resource_type: "video" });
     await Audio.findByIdAndDelete(audioExistente._id);
@@ -83,7 +79,6 @@ async function generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName }) 
   const audioPath = path.join(publicPath, audioFileName);
   const gttsLang = idioma === 'en' ? 'en' : 'es';
 
-  // Generar archivo local con gTTS
   await new Promise((resolve, reject) => {
     const gtts = new gTTS(textoAudio, gttsLang);
     gtts.save(audioPath, (err) => {
@@ -92,13 +87,11 @@ async function generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName }) 
     });
   });
 
-  // Subir a Cloudinary
   const result = await cloudinary.uploader.upload(audioPath, {
-    resource_type: "video", // Cloudinary maneja audios como "video"
+    resource_type: "video",
     folder: "eduaudio_audios"
   });
 
-  // Devuelve la URL segura
   return result.secure_url;
 }
 
@@ -137,12 +130,23 @@ async function resumirConGemini(texto, idioma, categoria, intento = 1) {
   return textoRespuesta;
 }
 
-// Genera audio desde texto con Gemini + gTTS + Cloudinary
-async function generarAudioDesdeTexto({ texto, idioma, categoria, userId, fileName }) {
-  const resumenCompleto = await resumirConGemini(texto, idioma, categoria);
-  const { parrafos, textoAudio } = parsearYLimpiar(resumenCompleto);
-  const audioUrl = await generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName });
+// Genera audio desde texto según modo
+async function generarAudioDesdeTexto({ texto, idioma, categoria, userId, fileName, modo }) {
+  let textoAudio, parrafos;
 
+  if (modo === 'normal') {
+    // Audio completo
+    textoAudio = texto;
+    parrafos = [texto];
+  } else {
+    // Resumen con Gemini
+    const resumenCompleto = await resumirConGemini(texto, idioma, categoria);
+    const parsed = parsearYLimpiar(resumenCompleto);
+    textoAudio = parsed.textoAudio;
+    parrafos = parsed.parrafos;
+  }
+
+  const audioUrl = await generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName });
   return { audioUrl, textoAudio, parrafos };
 }
 

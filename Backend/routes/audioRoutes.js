@@ -32,15 +32,15 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // GET /api/audios/download/:id - Descargar el archivo desde Cloudinary
-router.get('/download/:id', async (req, res) => {
+router.get('/download/:id', authMiddleware, async (req, res) => {
   try {
-    const audio = await Audio.findById(req.params.id);
+    const audio = await Audio.findOne({ _id: req.params.id, userId: req.userId });
     if (!audio) {
       return res.status(404).send('Audio no encontrado en la base de datos.');
     }
 
-    // En Cloudinary ya tienes la URL segura, así que puedes redirigir o forzar descarga
-    res.redirect(audio.audioUrl); // 👈 Redirige al archivo en Cloudinary
+    // Redirige al archivo en Cloudinary (URL segura)
+    res.redirect(audio.audioUrl);
   } catch (error) {
     res.status(500).send('Error interno al descargar el archivo.');
   }
