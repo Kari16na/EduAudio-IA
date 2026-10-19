@@ -1,5 +1,7 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const gTTS = require('gtts');
 
 function parsearYLimpiar(texto) {
   if (!texto) {
@@ -23,19 +25,19 @@ function parsearYLimpiar(texto) {
 }
 
 async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
-  if (!process.env.GEMINI_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     return texto;
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    const response = await fetch(url, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Resume este texto en ${idioma === 'en' ? 'inglés' : 'español'} para una categoría ${categoria}. Mantén la idea principal y favorece un formato claro y útil para audio educativo.\n\n${texto.slice(0, 15000)}`
+            text: `Resume este texto en ${idioma === 'en' ? 'inglés' : 'español'} para una categoría ${categoria}. Mantén la idea principal y favorece un formato claro y útil para audio educativo.\n\n${String(texto).slice(0, 15000)}`
           }]
         }]
       })
@@ -50,17 +52,34 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   }
 }
 
-async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  const outputDir = path.join(__dirname, '..', 'public');
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
+  return new Promise((resolve, reject) => {
+    const outputDir = path.join(__dirname, '..', 'public');
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-  const safeName = (fileName || 'audio').replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_]/g, '_');
-  const filePath = path.join(outputDir, `${safeName}_${Date.now()}.mp3`);
+    const safeName = (fileName || 'audio')
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9-_]/g, '_');
 
-  const textToWrite = String(textoAudio || '').slice(0, 4000);
-  fs.writeFileSync(filePath, `${textToWrite}\n`, 'utf8');
+    const filePath = path.join(outputDir, `${safeName}_${Date.now()}.mp3`);
+    const textToSpeak = String(textoAudio || '').slice(0, 4000);
+    if (!textToSpeak.trim()) {
+      reject(new Error('No hay texto para generar audio.'));
+      return;
+    }
 
-  return `/audio/${path.basename(filePath)}`;
+    const lang = idioma === 'en' ? 'en' : 'es';
+    const gtts = new gTTS(textToSpeak, lang);
+    gtts.save(filePath, (err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://eduaudio-ia-production.up.railway.app';
+      resolve(`${baseUrl}/audio/${path.basename(filePath)}`);
+    });
+  });
 }
 
 module.exports = {
