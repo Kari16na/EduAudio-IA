@@ -1,109 +1,165 @@
-import { useState } from "react";
-import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";
-import styles from "./ResetPassword.module.css";
+const gTTS = require('gtts');
+const fs = require('fs');
+const path = require('path');
+const Audio = require('../models/Audio');
+const cloudinary = require('../config/cloudinary');
 
-export default function ResetPassword({ onNavigate }) {
-  const token = new URLSearchParams(window.location.search).get("token");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function handleReset() {
-    if (!password.trim() || !confirmPassword.trim()) {
-      setError("Por favor completa todos los campos.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("La contraseña debe tener mínimo 8 caracteres.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword: password })
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message);
-        return;
-      }
-
-      setSuccess(true);
-    } catch {
-      setError("Error al conectar con el servidor.");
-    } finally {
-      setLoading(false);
-    }
+const ESTILOS = {
+  es: {
+    general: '',
+    idiomas: ' Ten en cuenta que el documento trata sobre el aprendizaje de un idioma...'
+  },
+  en: {
+    general: '',
+    idiomas: ' Keep in mind that the document is about language learning...'
   }
+};
 
-  if (success) {
-    return (
-      <FormCard onNavigate={onNavigate}>
-        <div className={styles.successBox}>
-          <h2 className={styles.title}>¡Contraseña actualizada!</h2>
-          <p>Ya puedes iniciar sesión con tu nueva contraseña.</p>
-          <button
-            className={styles.btnPrimary}
-            onClick={() => onNavigate("login")}
-          >
-            Ir al inicio de sesión
-          </button>
-        </div>
-      </FormCard>
-    );
+function getPrompts(idioma, categoria = 'general') {
+  const estiloExtra = ESTILOS[idioma]?.[categoria] || '';
+  if (idioma === 'en') {
+    return {
+      sistema: `You are an expert teacher...${estiloExtra}`,
+      usuario: (texto) => `Explain the following content... Content:\n${texto}`
+    };
   }
-
-  return (
-    <FormCard onNavigate={onNavigate}>
-      <div className={styles.header}>
-        <div className={styles.headerIcon}>🔑</div>
-        <h2 className={styles.title}>Nueva contraseña</h2>
-        <p className={styles.subtitle}>Ingresa tu nueva contraseña</p>
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Nueva contraseña:</label>
-        <input
-          className={styles.input}
-          type="password"
-          placeholder="Mínimo 8 caracteres"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Confirmar contraseña:</label>
-        <input
-          className={styles.input}
-          type="password"
-          placeholder="Repite tu contraseña"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-      </div>
-
-      {error && <div className={styles.error}>⚠️ {error}</div>}
-
-      <button
-        className={styles.btnPrimary}
-        onClick={handleReset}
-        disabled={loading}
-      >
-        {loading ? "Guardando..." : "Guardar nueva contraseña"}
-      </button>
-    </FormCard>
-  );
+  return {
+    sistema: `Eres un profesor experto...${estiloExtra}`,
+    usuario: (texto) => `Explica el siguiente contenido... Contenido:\n${texto}`
+  };
 }
+
+function esperar(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parsearYLimpiar(resumenCompleto) {
+  let parrafos = resumenCompleto
+    .split('|||')
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  if (parrafos.length <= 1) {
+    parrafos = resumenCompleto
+      .split('\n')
+      .map(p => p.replace(/^\d+\.\s*/, '').replace(/\*+/g, '').replace(/^-\s*/, '').trim())
+      .filter(p => p.length > 0);
+  }
+
+  const textoAudio = parrafos
+    .join('. ')
+    .replace(/\*+/g, '')
+    .replace(/#/g, '')
+    .replace(/_/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return { parrafos, textoAudio };
+}
+
+async function generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName }) {
+  const publicPath = path.join(__dirname, '../public');
+  if (!fs.existsSync(publicPath)) {
+    fs.mkdirSync(publicPath, { recursive: true });
+  }
+
+  const audioExistente = await Audio.findOne({ userId, fileName });
+  if (audioExistente) {
+    const publicId = audioExistente.audioUrl.split('/').pop().split('.')[0];
+    await cloudinary.uploader.destroy(`eduaudio_audios/${publicId}`, { resource_type: 'video' });
+    await Audio.findByIdAndDelete(audioExistente._id);
+  }
+
+  const audioFileName = `audio_${Date.now()}.mp3`;
+  const audioPath = path.join(publicPath, audioFileName);
+  const gttsLang = idioma === 'en' ? 'en' : 'es';
+
+  try {
+    await new Promise((resolve, reject) => {
+      const gtts = new gTTS(textoAudio, gttsLang);
+      gtts.save(audioPath, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    const result = await cloudinary.uploader.upload(audioPath, {
+      resource_type: 'video',
+      folder: 'eduaudio_audios'
+    });
+
+    return result.secure_url;
+  } finally {
+    try {
+      if (fs.existsSync(audioPath)) {
+        fs.unlinkSync(audioPath);
+      }
+    } catch (error) {
+      console.warn('No se pudo limpiar el archivo temporal:', error.message);
+    }
+  }
+}
+
+async function resumirConGemini(texto, idioma, categoria, intento = 1) {
+  const MAX_INTENTOS = 3;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY no está configurada en el servidor.');
+  }
+
+  const modelo = 'gemini-3.5-flash-lite';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
+  const { sistema, usuario } = getPrompts(idioma, categoria);
+
+  const body = {
+    system_instruction: { parts: [{ text: sistema }] },
+    contents: [{ role: 'user', parts: [{ text: usuario(texto) }] }]
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    if (response.status === 503 && intento < MAX_INTENTOS) {
+      const esperaMs = intento * 3000;
+      console.log(`Gemini saturado (503). Reintentando en ${esperaMs / 1000}s...`);
+      await esperar(esperaMs);
+      return resumirConGemini(texto, idioma, categoria, intento + 1);
+    }
+    throw new Error(`Error de Gemini API (${response.status}): ${await response.text()}`);
+  }
+
+  const data = await response.json();
+  const textoRespuesta = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!textoRespuesta) throw new Error('Gemini no devolvió contenido de texto.');
+  return textoRespuesta;
+}
+
+async function generarAudioDesdeTexto({ texto, idioma, categoria, userId, fileName, modo }) {
+  let textoAudio, parrafos;
+
+  if (modo === 'normal') {
+    textoAudio = texto;
+    parrafos = [texto];
+  } else {
+    const resumenCompleto = await resumirConGemini(texto, idioma, categoria);
+    const parsed = parsearYLimpiar(resumenCompleto);
+    textoAudio = parsed.textoAudio;
+    parrafos = parsed.parrafos;
+  }
+
+  const audioUrl = await generarArchivoAudioMp3({ textoAudio, idioma, userId, fileName });
+  return { audioUrl, textoAudio, parrafos };
+}
+
+module.exports = {
+  getPrompts,
+  resumirConGemini,
+  parsearYLimpiar,
+  generarArchivoAudioMp3,
+  generarAudioDesdeTexto
+};
