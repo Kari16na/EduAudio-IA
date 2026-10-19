@@ -1,116 +1,114 @@
-const express = require('express');
-const router = express.Router();
-const User = require('../models/user');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const cloudinary = require('../config/cloudinary'); // 👈 Importamos Cloudinary
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
-// Registro
-router.post('/register', async (req, res) => {
-  try {
-    const { fullName, email, password } = req.body;
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ message: 'Faltan datos requeridos.' });
+import { useState } from "react";
+import FormCard from "../Components/FormCard";
+import { API_URL } from "../config";
+import styles from "./ResetPassword.module.css";
+
+export default function ResetPassword({ onNavigate }) {
+  const token = new URLSearchParams(window.location.search).get("token");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleReset() {
+    if (!token) {
+      setError("El enlace para restablecer la contraseña es inválido o ha expirado.");
+      return;
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ fullName, email, password: hashedPassword });
-    await newUser.save();
-    res.status(201).json({ message: 'Usuario registrado exitosamente' });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Ya existe una cuenta con ese correo.' });
+
+    if (!password.trim() || !confirmPassword.trim()) {
+      setError("Por favor completa todos los campos.");
+      return;
     }
-    res.status(500).json({ message: error.message });
-  }
-});
-// Login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Usuario no encontrado' });
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Contraseña incorrecta' });
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.json({
-      token,
-      user: { id: user._id, fullName: user.fullName, email: user.email, profilePhoto: user.profilePhoto || "" }
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-// Actualizar perfil (nombre)
-router.put('/update', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Token requerido" });
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { fullName } = req.body;
-    const user = await User.findByIdAndUpdate(
-      decoded.id,
-      { fullName },
-      { new: true }
-    ).select('-password');
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-    res.json({ message: "Usuario actualizado", user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-// Cambiar contraseña
-router.put('/change-password', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Token requerido" });
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Faltan datos requeridos." });
+    if (password.length < 8) {
+      setError("La contraseña debe tener mínimo 8 caracteres.");
+      return;
     }
-    if (newPassword.length < 8) {
-      return res.status(400).json({ message: "La nueva contraseña debe tener mínimo 8 caracteres." });
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
     }
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "La contraseña actual es incorrecta." });
-    }
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
-    res.json({ message: "Contraseña actualizada correctamente." });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-// Subir / actualizar foto de perfil con Cloudinary
-router.post('/photo', upload.single('photo'), async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Token requerido" });
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!req.file) {
-      return res.status(400).json({ message: "Debes subir una imagen." });
-    }
-    // Subir imagen a Cloudinary
-    const result = await cloudinary.uploader.upload_stream(
-      { folder: "eduaudio_profiles" },
-      async (error, uploadResult) => {
-        if (error) return res.status(500).json({ message: error.message });
-        const user = await User.findByIdAndUpdate(
-          decoded.id,
-          { profilePhoto: uploadResult.secure_url },
-          { new: true }
-        ).select('-password');
-        res.json({ message: "Foto actualizada correctamente.", photoUrl: uploadResult.secure_url, user });
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword: password })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message);
+        return;
       }
-    );
-    // Usamos stream para subir el buffer
-    result.end(req.file.buffer);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+
+      setSuccess(true);
+    } catch {
+      setError("Error al conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   }
-});
-module.exports = router;
+
+  if (success) {
+    return (
+      <FormCard onNavigate={onNavigate}>
+        <div className={styles.successBox}>
+          <h2 className={styles.title}>¡Contraseña actualizada!</h2>
+          <p>Ya puedes iniciar sesión con tu nueva contraseña.</p>
+          <button
+            className={styles.btnPrimary}
+            onClick={() => onNavigate("login")}
+          >
+            Ir al inicio de sesión
+          </button>
+        </div>
+      </FormCard>
+    );
+  }
+
+  return (
+    <FormCard onNavigate={onNavigate}>
+      <div className={styles.header}>
+        <div className={styles.headerIcon}>🔑</div>
+        <h2 className={styles.title}>Nueva contraseña</h2>
+        <p className={styles.subtitle}>Ingresa tu nueva contraseña</p>
+      </div>
+
+      <div className={styles.fieldGroup}>
+        <label className={styles.label}>Nueva contraseña:</label>
+        <input
+          className={styles.input}
+          type="password"
+          placeholder="Mínimo 8 caracteres"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+
+      <div className={styles.fieldGroup}>
+        <label className={styles.label}>Confirmar contraseña:</label>
+        <input
+          className={styles.input}
+          type="password"
+          placeholder="Repite tu contraseña"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+      </div>
+
+      {error && <div className={styles.error}>⚠️ {error}</div>}
+
+      <button
+        className={styles.btnPrimary}
+        onClick={handleReset}
+        disabled={loading}
+      >
+        {loading ? "Guardando..." : "Guardar nueva contraseña"}
+      </button>
+    </FormCard>
+  );
+}
