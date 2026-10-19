@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
-
 // Enviar correo de recuperación con Brevo
 router.post('/forgot-password', async (req, res) => {
   try {
@@ -13,20 +12,18 @@ router.post('/forgot-password', async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'No existe una cuenta con ese correo.' });
     }
-
     // Crear token temporal de 1 hora
     const token = jwt.sign(
-      { id: user._id },
+      { id: user._id, purpose: 'reset' },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-
-    // Enlace de recuperación (ajusta tu dominio si cambia)
-    const linkRecuperacion = `https://edu-audio-ia.vercel.app/reset-password?token=${token}`;
-
+    // Enlace de recuperación: usa la URL de tu frontend (variable FRONTEND_URL)
+    const frontend = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const linkRecuperacion = `${frontend}/reset-password?token=${token}`;
     // Llamada a la API de Brevo
     await axios.post("https://api.brevo.com/v3/smtp/email", {
-      sender: { name: "EduAudio IA", email: "no-reply@eduaudio.com" },
+      sender: { name: "EduAudio IA", email: process.env.BREVO_SENDER || "no-reply@eduaudio.com" },
       to: [{ email }],
       subject: "Recuperar contraseña - EduAudio IA",
       htmlContent: `
@@ -52,24 +49,23 @@ router.post('/forgot-password', async (req, res) => {
         "Content-Type": "application/json"
       }
     });
-
     res.json({ message: 'Correo enviado exitosamente.' });
-
   } catch (error) {
     console.error('Error enviando correo:', error.message);
     res.status(500).json({ message: 'Error al enviar el correo.' });
   }
 });
-
 // Restablecer contraseña
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'La nueva contraseña debe tener mínimo 8 caracteres.' });
+    }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+    if (decoded.purpose !== 'reset') throw new Error('Token no válido para restablecer');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.findByIdAndUpdate(decoded.id, { password: hashedPassword });
-
     res.json({ message: 'Contraseña actualizada exitosamente.' });
   } catch (error) {
     console.error('Error en reset-password:', error.message);

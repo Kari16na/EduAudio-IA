@@ -3,7 +3,6 @@ import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages } 
 import NavBar from "../Components/NavBar";
 import { getAudios, generateAudio } from "../services/api";   // 👈 Importamos funciones del api.js
 import styles from "./Dashboard.module.css";
-
 export default function Dashboard({ onNavigate }) {
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const [file, setFile] = useState(null);
@@ -12,7 +11,6 @@ export default function Dashboard({ onNavigate }) {
   const [modo, setModo] = useState("resumen"); // 👈 nuevo estado para elegir modo
   const [loading, setLoading] = useState(false);
   const [totalAudios, setTotalAudios] = useState(0);
-
   useEffect(() => {
     async function contarAudios() {
       try {
@@ -25,13 +23,11 @@ export default function Dashboard({ onNavigate }) {
     }
     contarAudios();
   }, []);
-
   function handleFile(e) {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   }
-
   async function handleGenerate() {
     if (!file) return;
     setLoading(true);
@@ -39,12 +35,10 @@ export default function Dashboard({ onNavigate }) {
       const token = localStorage.getItem("token");
       // 👇 ahora pasamos también el modo
       const data = await generateAudio(token, file, idioma, categoria, modo);
-
-      if (!data || data.error) {
-        alert(data.message || data.error || "Ocurrió un error al procesar el documento.");
+      if (!data || data.error || !data.audio) {
+        alert(data?.message || data?.error || "Ocurrió un error al procesar el documento.");
         return;
       }
-
       localStorage.setItem("currentAudio", JSON.stringify(data.audio));
       onNavigate("audios");
     } catch (err) {
@@ -54,7 +48,6 @@ export default function Dashboard({ onNavigate }) {
       setLoading(false);
     }
   }
-
   return (
     <div className={styles.page}>
       {loading && (
@@ -70,7 +63,6 @@ export default function Dashboard({ onNavigate }) {
           </div>
         </div>
       )}
-
       <NavBar
         onNavigate={onNavigate}
         rightContent={
@@ -99,7 +91,6 @@ export default function Dashboard({ onNavigate }) {
           </div>
         }
       />
-
       <main className={styles.main}>
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>
@@ -108,7 +99,6 @@ export default function Dashboard({ onNavigate }) {
           <p className={styles.cardSubtitle}>
             Sube tu archivo PDF o Word y elige cómo quieres generar el audio.
           </p>
-
           {/* Idioma */}
           <label className={styles.label}>Idioma del audio:</label>
           <div className={styles.languageSelector} data-testid="language-selector">
@@ -129,7 +119,6 @@ export default function Dashboard({ onNavigate }) {
               <Languages size={16} /> English
             </button>
           </div>
-
           {/* Categoría */}
           <label className={styles.label}>Tipo de contenido:</label>
           <select
@@ -141,7 +130,6 @@ export default function Dashboard({ onNavigate }) {
             <option value="general">General</option>
             <option value="idiomas">Idiomas</option>
           </select>
-
           {/* Nuevo selector de modo */}
           <label className={styles.label}>Modo de generación:</label>
           <select
@@ -152,13 +140,12 @@ export default function Dashboard({ onNavigate }) {
             <option value="normal">Audio completo</option>
             <option value="resumen">Resumen + Audio</option>
           </select>
-
           {/* Subida de archivo */}
           <label className={styles.label}>Selecciona o arrastra tu archivo:</label>
           <label className={styles.dropZone}>
             <input
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf,.docx"
               onChange={handleFile}
               className={styles.fileInput}
               data-testid="upload-file-input"
@@ -178,11 +165,10 @@ export default function Dashboard({ onNavigate }) {
                 <span className={styles.dropText}>
                   Haz clic o arrastra tu archivo aquí
                 </span>
-                <span className={styles.dropFormats}>PDF o Word</span>
+                <span className={styles.dropFormats}>PDF o Word (.docx)</span>
               </div>
             )}
           </label>
-
           <button
             className={styles.btnGenerate}
             data-testid="upload-generate-btn"
@@ -192,7 +178,6 @@ export default function Dashboard({ onNavigate }) {
             <Music size={18} /> Generar Audio
           </button>
         </section>
-
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>
             <Headphones size={20} /> Mis Audios Recientes

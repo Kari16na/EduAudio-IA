@@ -1,27 +1,12 @@
-// routes/audioRoutes.js
-// Rutas CRUD de audios: listar, actualizar nombre, descargar y eliminar
-// Todas las rutas están protegidas con authMiddleware
-
+// Rutas CRUD de audios: listar, descargar, renombrar y eliminar.
+// Todas protegidas con authMiddleware.
 const express = require('express');
 const router = express.Router();
 const Audio = require('../models/Audio');
-const jwt = require('jsonwebtoken');
-const cloudinary = require('../config/cloudinary'); // 👈 Importamos Cloudinary
+const cloudinary = require('../config/cloudinary');
+const authMiddleware = require('../middleware/auth');
 
-// Middleware de autenticación JWT
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No autorizado' });
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    next();
-  } catch {
-    res.status(401).json({ message: 'Token inválido' });
-  }
-}
-
-// GET /api/audios - Obtener todos los audios del usuario autenticado
+// GET /api/audios - audios del usuario autenticado
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const audios = await Audio.find({ userId: req.userId }).sort({ createdAt: -1 });
@@ -31,64 +16,60 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/audios/download/:id - Descargar el archivo desde Cloudinary
-router.get('/download/:id', authMiddleware, async (req, res) => {
+// El navegador no puede mandar headers al descargar con window.location,
+// así que SOLO en esta ruta se acepta el token por ?token=
+function tokenDesdeQuery(req, res, next) {
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}
+
+// GET /api/audios/download/:id - redirige al archivo en Cloudinary
+router.get('/download/:id', tokenDesdeQuery, authMiddleware, async (req, res) => {
   try {
     const audio = await Audio.findOne({ _id: req.params.id, userId: req.userId });
-    if (!audio) {
-      return res.status(404).send('Audio no encontrado en la base de datos.');
-    }
-
-    // Redirige al archivo en Cloudinary (URL segura)
+    if (!audio) return res.status(404).send('Audio no encontrado en la base de datos.');
     res.redirect(audio.audioUrl);
   } catch (error) {
     res.status(500).send('Error interno al descargar el archivo.');
   }
 });
 
-// PUT /api/audios/:id - Actualizar el nombre de un audio
+// PUT /api/audios/:id - renombrar
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { fileName } = req.body;
-
     if (!fileName || fileName.trim().length === 0) {
       return res.status(400).json({ message: 'El nombre del audio es obligatorio.' });
     }
-
-    const audio = await Audio.findOne({ _id: req.params.id, userId: req.userId });
-    if (!audio) {
-      return res.status(404).json({ message: 'Audio no encontrado.' });
-    }
-
-    const audioActualizado = await Audio.findByIdAndUpdate(
-      req.params.id,
+    const audioActualizado = await Audio.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId },
       { fileName: fileName.trim() },
       { new: true }
     );
-
+    if (!audioActualizado) return res.status(404).json({ message: 'Audio no encontrado.' });
     res.json({ message: 'Nombre actualizado correctamente.', audio: audioActualizado });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// DELETE /api/audios/:id - Eliminar un audio de Cloudinary y de la base de datos
+// DELETE /api/audios/:id - elimina de Cloudinary y de MongoDB
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const audio = await Audio.findOne({ _id: req.params.id, userId: req.userId });
-    if (!audio) {
-      return res.status(404).json({ message: 'Audio no encontrado.' });
+    if (!audio) return res.status(404).json({ message: 'Audio no encontrado.' });
+
+    const publicId = audio.audioUrl.split('/').pop().split('.')[0];
+    try {
+      await cloudinary.uploader.destroy(`eduaudio_audios/${publicId}`, { resource_type: 'video' });
+    } catch (e) {
+      // Si Cloudinary falla igual borramos el registro, para no dejarlo "atascado"
+      console.error('Error borrando en Cloudinary:', e.message);
     }
 
-    // Extraer el public_id de Cloudinary desde la URL
-    const publicId = audio.audioUrl.split('/').pop().split('.')[0];
-
-    // Eliminar de Cloudinary
-    await cloudinary.uploader.destroy(`eduaudio_audios/${publicId}`, { resource_type: "video" });
-
-    // Eliminar de MongoDB
-    await Audio.findByIdAndDelete(req.params.id);
-
+    await Audio.findByIdAndDelete(audio._id);
     res.json({ message: 'Audio eliminado correctamente.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
