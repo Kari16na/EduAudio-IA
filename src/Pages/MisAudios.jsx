@@ -4,6 +4,10 @@ import NavBar from "../Components/NavBar";
 import { getAudios, deleteAudio, updateAudioName, normalizeAudioUrl } from "../services/api";
 import styles from "./MisAudios.module.css";
 
+function esCloudinary(url) {
+  return /res\.cloudinary\.com/i.test(url || "");
+}
+
 export default function MisAudios({ onNavigate }) {
   const [audios, setAudios] = useState([]);
   const [search, setSearch] = useState("");
@@ -50,23 +54,24 @@ export default function MisAudios({ onNavigate }) {
   }
 
   function handleDownload(audio) {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("No estás autenticado.");
-      return;
-    }
-
     if (!audio?.audioUrl) {
       alert("Este audio no tiene un archivo válido para descargar.");
       return;
     }
 
     const url = normalizeAudioUrl(audio.audioUrl);
+
+    if (!esCloudinary(url)) {
+      alert("Este audio es antiguo y ya no está disponible. Vuelve a generarlo.");
+      return;
+    }
+
+    const urlDescarga = url.replace("/upload/", "/upload/fl_attachment/");
+    const nombre = String(audio.fileName || "audio").replace(/\.[^/.]+$/, "") + ".mp3";
+
     const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.download = String(audio.fileName || "audio.mp3");
+    link.href = urlDescarga;
+    link.download = nombre;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -119,7 +124,14 @@ export default function MisAudios({ onNavigate }) {
       return;
     }
 
-    localStorage.setItem("currentAudio", JSON.stringify({ ...audio, audioUrl: normalizeAudioUrl(audio.audioUrl) }));
+    const url = normalizeAudioUrl(audio.audioUrl);
+
+    if (!esCloudinary(url)) {
+      alert("Este audio es antiguo y ya no está disponible. Vuelve a generarlo.");
+      return;
+    }
+
+    localStorage.setItem("currentAudio", JSON.stringify({ ...audio, audioUrl: url }));
     onNavigate("player");
   }
 
