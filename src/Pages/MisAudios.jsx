@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Play, Download, Pencil, Trash2, ArrowLeft, Check, X } from "lucide-react";
 import NavBar from "../Components/NavBar";
-import { getAudios, deleteAudio, updateAudioName, normalizeAudioUrl } from "../services/api";
+import { getAudios, deleteAudio, updateAudioName, downloadAudio } from "../services/api";
 import styles from "./MisAudios.module.css";
 
 export default function MisAudios({ onNavigate }) {
@@ -56,20 +56,12 @@ export default function MisAudios({ onNavigate }) {
       return;
     }
 
-    if (!audio?.audioUrl) {
-      alert("Este audio no tiene un archivo válido para descargar.");
+    if (!audio?._id) {
+      alert("Este audio no tiene un identificador válido para descargar.");
       return;
     }
 
-    const url = normalizeAudioUrl(audio.audioUrl);
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.download = String(audio.fileName || "audio.mp3");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadAudio(token, audio._id);
   }
 
   function handleAbrirEditar(audio) {
@@ -119,7 +111,7 @@ export default function MisAudios({ onNavigate }) {
       return;
     }
 
-    localStorage.setItem("currentAudio", JSON.stringify({ ...audio, audioUrl: normalizeAudioUrl(audio.audioUrl) }));
+    localStorage.setItem("currentAudio", JSON.stringify({ ...audio, audioUrl: audio.audioUrl }));
     onNavigate("player");
   }
 
