@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const axios = require('axios');
+const nodemailer = require('nodemailer');
 const User = require('../models/user');
 
 const router = express.Router();
@@ -23,7 +23,7 @@ router.post('/forgot-password', async (req, res) => {
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
-    if (!process.env.BREVO_API_KEY) {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
       return res.json({
         message: 'Correo enviado exitosamente.',
         devMode: true,
@@ -31,11 +31,21 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: 'EduAudio IA', email: process.env.BREVO_SENDER || 'no-reply@eduaudio.com' },
-      to: [{ email: user.email }],
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"EduAudio IA" <${process.env.GMAIL_USER}>`,
+      to: user.email,
       subject: 'Recuperar contraseña - EduAudio IA',
-      htmlContent: `
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
           <h2 style="color: #4A3F8F;">🎧 EduAudio IA</h2>
           <p>Hola <strong>${user.fullName}</strong>,</p>
@@ -45,11 +55,6 @@ router.post('/forgot-password', async (req, res) => {
           <p style="color:#888;font-size:13px;">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
         </div>
       `,
-    }, {
-      headers: {
-        'api-key': process.env.BREVO_API_KEY,
-        'Content-Type': 'application/json',
-      },
     });
 
     return res.json({ message: 'Correo enviado exitosamente.' });
