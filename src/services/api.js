@@ -3,6 +3,30 @@ import { API_URL } from "../config";
 const json = { "Content-Type": "application/json" };
 const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
+export function getBackendBaseUrl() {
+  return (import.meta.env.VITE_API_URL || "http://localhost:3000/api")
+    .replace(/\/$/, "")
+    .replace(/\/api$/, "");
+}
+
+export function normalizeAudioUrl(audioUrl) {
+  if (!audioUrl) return "";
+
+  const raw = String(audioUrl).trim();
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  const backendBaseUrl = getBackendBaseUrl();
+  if (raw.startsWith("/api/audio/")) {
+    return `${backendBaseUrl}/audio/${raw.replace(/^\/api\/audio\//i, "")}`;
+  }
+
+  if (raw.startsWith("/audio/")) {
+    return `${backendBaseUrl}${raw}`;
+  }
+
+  return `${backendBaseUrl}/${raw.replace(/^\/+/, "")}`;
+}
+
 // 🔐 Autenticación
 export async function loginUser(email, password) {
   const res = await fetch(`${API_URL}/users/login`, { method: "POST", headers: json, body: JSON.stringify({ email, password }) });

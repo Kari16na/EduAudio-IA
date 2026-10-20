@@ -1,58 +1,19 @@
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-const gTTS = require('gtts');
+const baseUrl = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://eduaudio-ia-production.up.railway.app';
+const normalizedBase = String(baseUrl).replace(/\/$/, '');
 
-function parsearYLimpiar(texto) {
-  if (!texto) {
-    return { textoAudio: '', parrafos: [] };
-  }
+function normalizePublicAudioUrl(audioUrl) {
+  if (!audioUrl) return '';
+  const url = String(audioUrl).trim();
 
-  const limpio = String(texto)
-    .replace(/\s+/g, ' ')
-    .trim();
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/api/audio/')) return `${normalizedBase}/audio/${url.replace(/^\/api\/audio\//i, '')}`;
+  if (url.startsWith('/audio/')) return `${normalizedBase}${url}`;
+  if (url.startsWith('audio/')) return `${normalizedBase}/${url}`;
 
-  const parrafos = limpio
-    .split(/(?<=[.!?])\s+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .slice(0, 20);
-
-  return {
-    textoAudio: limpio,
-    parrafos,
-  };
+  return `${normalizedBase}/${url.replace(/^\/+/, '')}`;
 }
 
-async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return texto;
-  }
-
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Resume este texto en ${idioma === 'en' ? 'inglés' : 'español'} para una categoría ${categoria}. Mantén la idea principal y favorece un formato claro y útil para audio educativo.\n\n${String(texto).slice(0, 15000)}`
-          }]
-        }]
-      })
-    });
-
-    const data = await response.json();
-    const candidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return candidate || texto;
-  } catch (error) {
-    console.error('Error con Gemini:', error.message);
-    return texto;
-  }
-}
-
-function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
+async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
   return new Promise((resolve, reject) => {
     const outputDir = path.join(__dirname, '..', 'public');
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
@@ -76,8 +37,7 @@ function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName })
         return;
       }
 
-      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://eduaudio-ia-production.up.railway.app';
-      resolve(`${baseUrl}/audio/${path.basename(filePath)}`);
+      resolve(normalizePublicAudioUrl(`/audio/${path.basename(filePath)}`));
     });
   });
 }
