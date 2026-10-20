@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const gTTS = require('gtts');
+const cloudinary = require('../config/cloudinary');
 
 const baseUrl = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://eduaudio-ia-production.up.railway.app';
 const normalizedBase = String(baseUrl).replace(/\/$/, '');
@@ -117,34 +118,52 @@ ${contenido}`;
 }
 
 async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  return new Promise((resolve, reject) => {
-    const outputDir = path.join(__dirname, '..', 'public');
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  const textToSpeak = String(textoAudio || '').slice(0, 4000);
 
-    const safeName = (fileName || 'audio')
-      .replace(/\.[^/.]+$/, '')
-      .replace(/[^a-zA-Z0-9-_]/g, '_');
+  if (!textToSpeak.trim()) {
+    throw new Error('No hay texto para generar audio.');
+  }
 
-    const filePath = path.join(outputDir, `${safeName}_${Date.now()}.mp3`);
-    const textToSpeak = String(textoAudio || '').slice(0, 4000);
+  const tempDir = path.join(__dirname, '..', 'tmp');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
 
-    if (!textToSpeak.trim()) {
-      reject(new Error('No hay texto para generar audio.'));
-      return;
-    }
+  const safeName = (fileName || 'audio')
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-zA-Z0-9-_]/g, '_');
 
-    const lang = idioma === 'en' ? 'en' : 'es';
+  const tempFile = path.join(tempDir, `${safeName}_${Date.now()}.mp3`);
+  const lang = idioma === 'en' ? 'en' : 'es';
+
+  await new Promise((resolve, reject) => {
     const gtts = new gTTS(textToSpeak, lang);
-
-    gtts.save(filePath, (err) => {
+    gtts.save(tempFile, (err) => {
       if (err) {
         reject(err);
         return;
       }
-
-      resolve(normalizePublicAudioUrl(`/audio/${path.basename(filePath)}`));
+      resolve();
     });
   });
+
+  try {
+    const result = await cloudinary.uploader.upload(tempFile, {
+      folder: 'eduaudio_audios',
+      resource_type: 'video',
+      format: 'mp3',
+      overwrite: true,
+    });
+
+    return result?.secure_url || result?.url || normalizePublicAudioUrl('/audio/' + path.basename(tempFile));
+  } catch (error) {
+    console.error('Error subiendo audio a Cloudinary:', error?.message || error);
+    throw error;
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+  }
 }
 
 module.exports = {
