@@ -124,6 +124,10 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
     throw new Error('No hay texto para generar audio.');
   }
 
+  if (!process.env.CLOUD_NAME || !process.env.API_KEY || !process.env.API_SECRET) {
+    throw new Error('Faltan variables de Cloudinary: CLOUD_NAME, API_KEY o API_SECRET.');
+  }
+
   const tempDir = path.join(__dirname, '..', 'tmp');
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
@@ -150,11 +154,17 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
   try {
     const result = await cloudinary.uploader.upload(tempFile, {
       folder: 'eduaudio_audios',
-      resource_type: 'auto',
+      resource_type: 'video',
       overwrite: true,
+      format: 'mp3',
     });
 
-    return result?.secure_url || result?.url || normalizePublicAudioUrl('/audio/' + path.basename(tempFile));
+    const secureUrl = result?.secure_url || result?.url;
+    if (!secureUrl) {
+      throw new Error('Cloudinary no devolvió una URL pública válida para el audio.');
+    }
+
+    return secureUrl;
   } catch (error) {
     console.error('Error subiendo audio a Cloudinary:', error?.message || error);
     throw error;
