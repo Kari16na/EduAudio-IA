@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Headphones, ArrowLeft, SkipBack, SkipForward, Play, Pause } from "lucide-react";
 import NavBar from "../Components/NavBar";
+import { normalizeAudioUrl } from "../services/api";
 import styles from "./Player.module.css";
 
 const SYNC_OFFSET_SECONDS = 0.15;
@@ -19,9 +20,14 @@ function calcularPeso(palabra) {
 export default function Player({ onNavigate }) {
   const audioData = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("currentAudio") || "{}");
+      const raw = localStorage.getItem("currentAudio") || "{}";
+      const parsed = JSON.parse(raw);
+      return {
+        ...parsed,
+        audioUrl: normalizeAudioUrl(parsed.audioUrl || ""),
+      };
     } catch {
-      return {};
+      return { audioUrl: "" };
     }
   }, []);
 
