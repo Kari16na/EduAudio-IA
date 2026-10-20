@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, Play, Download, Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { Search, Play, Download, Pencil, Trash2, ArrowLeft, Check, X } from "lucide-react";
 import NavBar from "../Components/NavBar";
-import { getAudios, deleteAudio, updateAudioName } from "../services/api";  
+import { getAudios, deleteAudio, updateAudioName } from "../services/api";
 import styles from "./MisAudios.module.css";
-import { API_URL } from "../config"; // 👈 Importamos API_URL
+import { API_URL } from "../config";
 
 export default function MisAudios({ onNavigate }) {
   const [audios, setAudios] = useState([]);
@@ -19,42 +19,56 @@ export default function MisAudios({ onNavigate }) {
     async function cargarAudios() {
       try {
         const token = localStorage.getItem("token");
+        if (!token) {
+          setAudios([]);
+          return;
+        }
+
         const data = await getAudios(token);
-        setAudios(data);
-      } catch {
+        setAudios(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error al cargar los audios:", error);
         alert("Error al cargar los audios.");
       } finally {
         setLoading(false);
       }
     }
+
     cargarAudios();
   }, []);
 
   async function handleDelete(id) {
     if (!confirm("¿Seguro que quieres eliminar este audio?")) return;
+
     try {
       const token = localStorage.getItem("token");
       await deleteAudio(token, id);
-      setAudios(audios.filter(a => a._id !== id));
-    } catch {
+      setAudios((prev) => prev.filter((audio) => audio._id !== id));
+    } catch (error) {
+      console.error("Error al eliminar:", error);
       alert("Error al eliminar el audio.");
     }
   }
 
-  // ✅ Nueva versión: descarga usando la ruta del backend
   function handleDownload(audio) {
     const token = localStorage.getItem("token");
     if (!token) {
       alert("No estás autenticado.");
       return;
     }
-    // Redirige al backend, que a su vez redirige a Cloudinary
-    window.location.href = `${API_URL}/audios/download/${audio._id}?token=${token}`;
+
+    if (!audio?.audioUrl) {
+      alert("Este audio no tiene un archivo válido para descargar.");
+      return;
+    }
+
+    const url = audio.audioUrl.startsWith("http") ? audio.audioUrl : `${API_URL}${audio.audioUrl}`;
+    window.open(url, "_blank");
   }
 
   function handleAbrirEditar(audio) {
     setAudioEditar(audio);
-    setNuevoNombre(audio.fileName);
+    setNuevoNombre(audio.fileName || "");
     setModalAbierto(true);
   }
 
@@ -69,21 +83,24 @@ export default function MisAudios({ onNavigate }) {
       alert("El nombre no puede estar vacío.");
       return;
     }
+
     try {
       setGuardando(true);
       const token = localStorage.getItem("token");
       const data = await updateAudioName(token, audioEditar._id, nuevoNombre.trim());
 
       if (!data || data.error) {
-        alert(data.message || "Error al actualizar.");
+        alert(data?.message || "Error al actualizar.");
         return;
       }
 
-      setAudios(audios.map(a =>
-        a._id === audioEditar._id ? { ...a, fileName: nuevoNombre.trim() } : a
+      setAudios((prev) => prev.map((audio) =>
+        audio._id === audioEditar._id ? { ...audio, fileName: nuevoNombre.trim() } : audio
       ));
+
       handleCerrarModal();
-    } catch {
+    } catch (error) {
+      console.error("Error al actualizar nombre:", error);
       alert("Error al actualizar el nombre.");
     } finally {
       setGuardando(false);
@@ -91,12 +108,17 @@ export default function MisAudios({ onNavigate }) {
   }
 
   function handlePlay(audio) {
+    if (!audio?.audioUrl) {
+      alert("Este audio no está disponible para reproducir.");
+      return;
+    }
+
     localStorage.setItem("currentAudio", JSON.stringify(audio));
     onNavigate("player");
   }
 
-  const filtered = audios.filter((audio) =>
-    audio.fileName.toLowerCase().includes(search.toLowerCase())
+  const filtered = (audios || []).filter((audio) =>
+    (audio.fileName || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -104,63 +126,86 @@ export default function MisAudios({ onNavigate }) {
       <NavBar
         onNavigate={onNavigate}
         rightContent={
-          <button
-            className={styles.btnBack}
-            onClick={() => onNavigate("dashboard")}
-          >
+          <button className={styles.btnBack} onClick={() => onNavigate("dashboard")}>
             <ArrowLeft size={16} /> Volver al Dashboard
           </button>
         }
       />
 
       <main className={styles.main}>
-        <h2>Mis Audios</h2>
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>Tu Biblioteca de Estudio</h1>
+            <p className={styles.subtitle}>Aquí están todos tus documentos convertidos a audio.</p>
+          </div>
 
-        <input
-          type="text"
-          placeholder="Buscar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+          <div className={styles.searchWrapper}>
+            <Search size={16} className={styles.searchIcon} />
+            <input
+              className={styles.search}
+              type="text"
+              placeholder="Buscar audio..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
 
         {loading ? (
-          <p>Cargando...</p>
+          <div className={styles.empty}>Cargando audios...</div>
+        ) : filtered.length === 0 ? (
+          <div className={styles.empty}>No hay audios para mostrar.</div>
         ) : (
-          <ul>
+          <div className={styles.list}>
             {filtered.map((audio) => (
-              <li key={audio._id}>
-                <p>{audio.fileName}</p>
-                <audio controls src={audio.audioUrl}></audio>
-                <button onClick={() => handlePlay(audio)}>
-                  <Play size={16} /> Escuchar
-                </button>
-                <button onClick={() => handleDownload(audio)}>
-                  <Download size={16} /> Descargar
-                </button>
-                <button onClick={() => handleAbrirEditar(audio)}>
-                  <Pencil size={16} /> Renombrar
-                </button>
-                <button onClick={() => handleDelete(audio._id)}>
-                  <Trash2 size={16} /> Eliminar
-                </button>
-              </li>
+              <article key={audio._id} className={styles.audioCard}>
+                <div className={styles.audioInfo}>
+                  <div className={styles.audioName}>{audio.fileName || "Audio sin nombre"}</div>
+                  <div className={styles.audioDate}>
+                    Creado: {new Date(audio.createdAt || Date.now()).toLocaleDateString("es-ES")}
+                  </div>
+                </div>
+
+                <div className={styles.audioActions}>
+                  <button className={styles.btnPlay} onClick={() => handlePlay(audio)}>
+                    <Play size={14} /> Escuchar
+                  </button>
+                  <button className={styles.btnDownload} onClick={() => handleDownload(audio)}>
+                    <Download size={14} /> Descargar
+                  </button>
+                  <button className={styles.btnEdit} onClick={() => handleAbrirEditar(audio)} aria-label="Renombrar audio">
+                    <Pencil size={14} />
+                  </button>
+                  <button className={styles.btnDelete} onClick={() => handleDelete(audio._id)} aria-label="Eliminar audio">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </article>
             ))}
-          </ul>
+          </div>
         )}
       </main>
 
       {modalAbierto && (
-        <div className={styles.modal}>
-          <h3>Editar nombre</h3>
-          <input
-            type="text"
-            value={nuevoNombre}
-            onChange={(e) => setNuevoNombre(e.target.value)}
-          />
-          <button onClick={handleGuardarNombre} disabled={guardando}>
-            Guardar
-          </button>
-          <button onClick={handleCerrarModal}>Cancelar</button>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h3 className={styles.modalTitle}><Pencil size={18} /> Renombrar audio</h3>
+            <p className={styles.modalSubtitle}>Escribe el nuevo nombre que quieres usar.</p>
+            <input
+              className={styles.modalInput}
+              type="text"
+              value={nuevoNombre}
+              onChange={(e) => setNuevoNombre(e.target.value)}
+            />
+            <div className={styles.modalActions}>
+              <button className={styles.btnCancelar} onClick={handleCerrarModal} disabled={guardando}>
+                <X size={14} /> Cancelar
+              </button>
+              <button className={styles.btnGuardar} onClick={handleGuardarNombre} disabled={guardando}>
+                <Check size={14} /> {guardando ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
