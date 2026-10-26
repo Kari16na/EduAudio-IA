@@ -53,21 +53,20 @@ export default function SignUp({ onNavigate }) {
     }
   }
 
-  // Criterios de nivel más alcanzables (Verde con 8+ caracteres)
+  // Lógica exacta solicitada:
+  // < 8 caracteres = Débil (Rojo)
+  // > 8 caracteres (hasta 11) = Media (Amarillo)
+  // 12 caracteres (o más) = Fuerte (Verde, siendo 12 el máximo)
   function getPasswordLevel() {
     if (password.length === 0) return 0;
-    if (password.length < 5) return 1; // Muy débil
-    if (password.length < 8) return 2; // Débil
-    // Si tiene 8+ caracteres pero no incluye números/letras combinados
-    const tieneNumeros = /\d/.test(password);
-    const tieneLetras = /[a-zA-Z]/.test(password);
-    if (password.length >= 8 && (!tieneNumeros || !tieneLetras)) return 3; // Media
-    return 4; // Fuerte (8+ caracteres con letras y números)
+    if (password.length < 8) return 1; // Débil
+    if (password.length <= 11) return 2; // Media
+    return 3; // Fuerte (12 caracteres)
   }
 
   const passwordLevel = getPasswordLevel();
-  const levelLabels = ["", "Muy débil", "Débil", "Media", "Fuerte"];
-  const levelClasses = ["", styles.level1, styles.level2, styles.level3, styles.level4];
+  const levelLabels = ["", "Débil", "Media", "Fuerte"];
+  const levelClasses = ["", styles.level1, styles.level2, styles.level3];
 
   return (
     <FormCard onNavigate={onNavigate}>
@@ -114,14 +113,14 @@ export default function SignUp({ onNavigate }) {
           type="password"
           data-testid="signup-password"
           placeholder="Mínimo 8 caracteres"
-          maxLength={30}
+          maxLength={12}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         {password.length > 0 && (
           <div className={styles.strengthWrapper}>
             <div className={styles.strengthBars}>
-              {[1, 2, 3, 4].map((level) => (
+              {[1, 2, 3].map((level) => (
                 <div
                   key={level}
                   className={`${styles.strengthBar} ${
@@ -131,7 +130,7 @@ export default function SignUp({ onNavigate }) {
               ))}
             </div>
             <span className={`${styles.strengthLabel} ${levelClasses[passwordLevel]}`}>
-              Nivel: {levelLabels[passwordLevel]}
+              {levelLabels[passwordLevel]}
             </span>
           </div>
         )}
@@ -148,7 +147,7 @@ export default function SignUp({ onNavigate }) {
           type="password"
           data-testid="signup-confirm-password"
           placeholder="Repite tu contraseña"
-          maxLength={30}
+          maxLength={12}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
