@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require('path');
+const path = path = require('path');
 const axios = require('axios');
 const gTTS = require('gtts');
 const cloudinary = require('../config/cloudinary');
@@ -57,20 +57,27 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   }
 
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
-  const prompt = `Eres un asistente que resume textos educativos. Responde solo con el resumen y mantén un formato claro y legible para audio.
+  
+  // Prompt pedagógico optimizado para formato podcast de estudio
+  const prompt = `Eres un profesor experto y creador de podcasts educativos. Tu objetivo es transformar el siguiente texto en una clase explicativa y natural pensada exclusivamente para ser escuchada y memorizada fácilmente.
 
 Contexto:
 - Idioma: ${idiomaLabel}
 - Categoría: ${categoria}
 
-Instrucciones:
-1. Genera un resumen claro, conciso y útil para estudiar.
-2. Divide en párrafos cortos para lectura en voz alta.
-3. No agregues introducciones ni comentarios.
-4. Si el texto tiene listas, conviértelas en ideas claras.
-5. Mantén la información más importante y útil para aprender.
+Estructura obligatoria que debe seguir tu explicación:
+1. **Introducción (Gancho):** Comienza indicando brevemente de qué trata este tema y por qué es clave aprenderlo.
+2. **Ideas Principales:** Desarrolla los puntos medulares del texto de manera ordenada y fluida, evitando saltos bruscos.
+3. **Explicación Profunda y Analogías:** Traduce los conceptos más complejos o teóricos a ejemplos prácticos o analogías sencillas de la vida real para asegurar la comprensión profunda.
+4. **Cierre de Repaso:** Termina con una breve síntesis o conclusión de lo aprendido para fijar el conocimiento.
 
-Texto a resumir:
+Instrucciones de formato estricto:
+- Redacta todo en párrafos conversacionales y fluidos, ideales para una locución en voz alta.
+- No uses viñetas, guiones ni listas de código (el texto será convertido a audio).
+- No agregues introducciones conversacionales de IA como "Aquí tienes tu resumen", ve directo al contenido del podcast educativo.
+- Mantén la extensión adecuada para un audio claro y de gran valor educativo.
+
+Texto a procesar:
 ${contenido}`;
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -81,7 +88,7 @@ ${contenido}`;
 
   try {
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$){apiKey}`,
       {
         contents: [
           {
@@ -89,8 +96,8 @@ ${contenido}`;
           },
         ],
         generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 800,
+          temperature: 0.4,
+          maxOutputTokens: 1000,
         },
       },
       {
