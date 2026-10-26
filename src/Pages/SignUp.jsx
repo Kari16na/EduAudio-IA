@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";   // API_URL viene de process.env
+import { API_URL } from "../config";
 import styles from "./SignUp.module.css";
 
 export default function SignUp({ onNavigate }) {
@@ -35,7 +35,6 @@ export default function SignUp({ onNavigate }) {
     }
     setError(null);
     try {
-      // Se utiliza API_URL para reemplazar localhost
       const res = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,12 +53,16 @@ export default function SignUp({ onNavigate }) {
     }
   }
 
+  // Criterios de nivel más alcanzables (Verde con 8+ caracteres)
   function getPasswordLevel() {
     if (password.length === 0) return 0;
-    if (password.length < 4) return 1;
-    if (password.length < 8) return 2;
-    if (password.length < 12) return 3;
-    return 4;
+    if (password.length < 5) return 1; // Muy débil
+    if (password.length < 8) return 2; // Débil
+    // Si tiene 8+ caracteres pero no incluye números/letras combinados
+    const tieneNumeros = /\d/.test(password);
+    const tieneLetras = /[a-zA-Z]/.test(password);
+    if (password.length >= 8 && (!tieneNumeros || !tieneLetras)) return 3; // Media
+    return 4; // Fuerte (8+ caracteres con letras y números)
   }
 
   const passwordLevel = getPasswordLevel();
@@ -128,7 +131,7 @@ export default function SignUp({ onNavigate }) {
               ))}
             </div>
             <span className={`${styles.strengthLabel} ${levelClasses[passwordLevel]}`}>
-              {levelLabels[passwordLevel]}
+              Nivel: {levelLabels[passwordLevel]}
             </span>
           </div>
         )}
