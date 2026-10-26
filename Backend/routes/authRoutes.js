@@ -1,10 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const User = require('../models/user');
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 router.post('/forgot-password', async (req, res) => {
   try {
@@ -23,28 +24,14 @@ router.post('/forgot-password', async (req, res) => {
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      return res.json({
-        message: 'Correo enviado exitosamente.',
-        devMode: true,
-        resetLink,
-      });
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({ message: 'Falta configurar la API Key de Resend en el servidor.' });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-      connectionTimeout: 10000, // Evita que se quede congelado si hay problemas de red en Railway
-    });
-
-    await transporter.sendMail({
-      from: `"EduAudio IA" <${process.env.GMAIL_USER}>`,
-      to: user.email,
+    // Envío del correo mediante la API HTTP de Resend (nunca se bloquea en Railway)
+    const { error } = await resend.emails.send({
+      from: 'EduAudio IA <onboarding@resend.dev>', // O tu dominio personalizado si lo configuras luego
+      to: [user.email],
       subject: 'Recuperar contraseña - EduAudio IA',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
@@ -58,10 +45,15 @@ router.post('/forgot-password', async (req, res) => {
       `,
     });
 
+    if (error) {
+      console.error('Error de Resend:', error);
+      return res.status(500).json({ message: 'Error al enviar el correo.' });
+    }
+
     return res.json({ message: 'Correo enviado exitosamente.' });
   } catch (error) {
-    console.error('Error enviando correo:', error.message);
-    return res.status(500).json({ message: 'Error al enviar el correo.' });
+    console.error('Error en forgot-password:', error.message);
+    return res.status(500).json({ message: 'Error al procesar la solicitud.' });
   }
 });
 
