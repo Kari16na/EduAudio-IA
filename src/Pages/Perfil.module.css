@@ -282,3 +282,40 @@
   background: var(--color-primary);
   color: var(--color-white);
 }
+
+/* Zona de peligro / Eliminar cuenta */
+.dangerZone {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.dangerTitle {
+  color: #e74c3c;
+}
+
+.dangerText {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.btnDanger {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-main);
+  transition: background-color 0.2s;
+}
+
+.btnDanger:hover {
+  background-color: #ffcdd2;
+}
