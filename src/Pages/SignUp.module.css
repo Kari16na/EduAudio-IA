@@ -1,3 +1,4 @@
+
 /* src/Pages/SignUp.module.css */
 .header {
   text-align: center;
@@ -56,7 +57,6 @@
   border-color: var(--color-error) !important;
 }
 
-/* Indicador de Fortaleza de Contraseña */
 .strengthWrapper {
   display: flex;
   flex-direction: column;
@@ -80,20 +80,30 @@
   transition: background 0.3s ease;
 }
 
+/* El texto de la contraseña */
 .strengthLabel {
   font-size: 13px !important;
   font-weight: bold !important;
   display: block !important;
   margin-top: 4px !important;
-  visibility: visible !important;
-  opacity: 1 !important;
   background: transparent !important;
 }
 
-/* Colores netamente para el texto y las barras */
-.level1 { background-color: #dc3545 !important; color: #dc3545 !important; } /* Débil - Rojo */
-.level2 { background-color: #d39e00 !important; color: #d39e00 !important; } /* Media - Amarillo */
-.level3 { background-color: #28a745 !important; color: #28a745 !important; } /* Fuerte - Verde */
+/* Colores específicos para cada nivel (tanto barras como texto) */
+.level1 { 
+  background-color: #dc3545 !important; 
+  color: #dc3545 !important; 
+} 
+
+.level2 { 
+  background-color: #d39e00 !important; 
+  color: #d39e00 !important; 
+} 
+
+.level3 { 
+  background-color: #28a745 !important; 
+  color: #28a745 !important; 
+}
 
 .fieldError {
   color: var(--color-error);
