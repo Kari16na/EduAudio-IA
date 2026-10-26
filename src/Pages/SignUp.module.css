@@ -56,6 +56,7 @@
   border-color: var(--color-error) !important;
 }
 
+/* Indicador de Fortaleza de Contraseña */
 .strengthWrapper {
   display: flex;
   flex-direction: column;
@@ -80,17 +81,19 @@
 }
 
 .strengthLabel {
-  font-size: 12px;
-  font-weight: bold;
-  display: block;
-  margin-top: 2px;
-  background: transparent !important; /* Se quita cualquier fondo heredado */
+  font-size: 13px !important;
+  font-weight: bold !important;
+  display: block !important;
+  margin-top: 4px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
 }
 
-/* Colores netamente para el texto y las barras según lo solicitado */
+/* Colores netamente para el texto y las barras */
 .level1 { background-color: #dc3545 !important; color: #dc3545 !important; } /* Débil - Rojo */
 .level2 { background-color: #d39e00 !important; color: #d39e00 !important; } /* Media - Amarillo */
-.level3 { background-color: #28a745 !important; color: #28a745 !important; } /* Fuerte - Verde (12 caracteres) */
+.level3 { background-color: #28a745 !important; color: #28a745 !important; } /* Fuerte - Verde */
 
 .fieldError {
   color: var(--color-error);
