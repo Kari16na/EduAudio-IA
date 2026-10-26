@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
 import FormCard from "../Components/FormCard";
 import { API_URL } from "../config";
 import styles from "./SignUp.module.css";
@@ -11,6 +11,10 @@ export default function SignUp({ onNavigate }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Estado para mostrar u ocultar la contraseña
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   async function handleRegister() {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -103,17 +107,28 @@ export default function SignUp({ onNavigate }) {
         />
       </div>
 
+      {/* Contraseña con icono de Ojo */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Contraseña:</label>
-        <input
-          className={styles.input}
-          type="password"
-          data-testid="signup-password"
-          placeholder="Mínimo 8 caracteres"
-          maxLength={12}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className={styles.passwordContainer}>
+          <input
+            className={styles.inputPassword}
+            type={showPassword ? "text" : "password"}
+            data-testid="signup-password"
+            placeholder="Mínimo 8 caracteres"
+            maxLength={12}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            className={styles.eyeButton}
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+
         {password.length > 0 && (
           <div className={styles.strengthWrapper}>
             <div className={styles.strengthBars}>
@@ -126,7 +141,6 @@ export default function SignUp({ onNavigate }) {
                 />
               ))}
             </div>
-            {/* Aquí usamos textClasses para que SOLO pinte la letra y no cree un fondo sólido */}
             <span className={`${styles.strengthLabel} ${textClasses[passwordLevel]}`}>
               {levelLabels[passwordLevel]}
             </span>
@@ -134,21 +148,32 @@ export default function SignUp({ onNavigate }) {
         )}
       </div>
 
+      {/* Confirmar Contraseña con icono de Ojo */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Confirmar Contraseña:</label>
-        <input
-          className={`${styles.input} ${
-            confirmPassword.length > 0 && password !== confirmPassword
-              ? styles.inputError
-              : ""
-          }`}
-          type="password"
-          data-testid="signup-confirm-password"
-          placeholder="Repite tu contraseña"
-          maxLength={12}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
+        <div className={styles.passwordContainer}>
+          <input
+            className={`${styles.inputPassword} ${
+              confirmPassword.length > 0 && password !== confirmPassword
+                ? styles.inputError
+                : ""
+            }`}
+            type={showConfirmPassword ? "text" : "password"}
+            data-testid="signup-confirm-password"
+            placeholder="Repite tu contraseña"
+            maxLength={12}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            className={styles.eyeButton}
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+
         {confirmPassword.length > 0 && password !== confirmPassword && (
           <p className={styles.fieldError}>Las contraseñas no coinciden</p>
         )}
