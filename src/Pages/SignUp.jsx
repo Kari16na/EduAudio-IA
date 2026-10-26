@@ -53,10 +53,6 @@ export default function SignUp({ onNavigate }) {
     }
   }
 
-  // Lógica exacta solicitada:
-  // < 8 caracteres = Débil (Rojo)
-  // > 8 caracteres (hasta 11) = Media (Amarillo)
-  // 12 caracteres (o más) = Fuerte (Verde, siendo 12 el máximo)
   function getPasswordLevel() {
     if (password.length === 0) return 0;
     if (password.length < 8) return 1; // Débil
@@ -67,6 +63,7 @@ export default function SignUp({ onNavigate }) {
   const passwordLevel = getPasswordLevel();
   const levelLabels = ["", "Débil", "Media", "Fuerte"];
   const levelClasses = ["", styles.level1, styles.level2, styles.level3];
+  const textClasses = ["", styles.textLevel1, styles.textLevel2, styles.textLevel3];
 
   return (
     <FormCard onNavigate={onNavigate}>
@@ -129,7 +126,8 @@ export default function SignUp({ onNavigate }) {
                 />
               ))}
             </div>
-            <span className={`${styles.strengthLabel} ${levelClasses[passwordLevel]}`}>
+            {/* Aquí usamos textClasses para que SOLO pinte la letra y no cree un fondo sólido */}
+            <span className={`${styles.strengthLabel} ${textClasses[passwordLevel]}`}>
               {levelLabels[passwordLevel]}
             </span>
           </div>
