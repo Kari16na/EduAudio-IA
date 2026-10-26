@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera, Trash2 } from "lucide-react";
 import NavBar from "../Components/NavBar";
-import { getAudiosCount, updateUserName, changePassword, uploadProfilePhoto } from "../services/api";
+import { getAudiosCount, updateUserName, changePassword, uploadProfilePhoto, deleteAccount } from "../services/api";
 import styles from "./Perfil.module.css";
 
 export default function Perfil({ onNavigate }) {
@@ -110,7 +110,6 @@ export default function Perfil({ onNavigate }) {
         return;
       }
 
-      // Aseguramos capturar la URL sin importar el nombre exacto de la propiedad que devuelva el backend
       const novaFotoUrl = data.photoUrl || data.url || data.imageUrl || fotoPreview;
 
       const actualizado = { ...usuario, profilePhoto: novaFotoUrl };
@@ -126,7 +125,6 @@ export default function Perfil({ onNavigate }) {
     }
   }
 
-  // Función para eliminar cuenta
   async function handleEliminarCuenta() {
     const confirmacion = window.confirm(
       "¿Estás segura de que deseas eliminar tu cuenta? Esta acción es irreversible y borrará todos tus datos y audios."
@@ -135,10 +133,13 @@ export default function Perfil({ onNavigate }) {
 
     try {
       const token = localStorage.getItem("token");
-      // Opcional: si tienes una función deleteAccount en tu api.js, la puedes llamar aquí:
-      // const res = await deleteAccount(token);
+      const data = await deleteAccount(token);
       
-      // Limpiamos la sesión local
+      if (data.error) {
+        alert(data.message || "No se pudo eliminar la cuenta.");
+        return;
+      }
+      
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       alert("Tu cuenta ha sido eliminada.");
@@ -327,7 +328,7 @@ export default function Perfil({ onNavigate }) {
                 cursor: "pointer",
                 width: "100%",
                 display: "flex",
-                alignItem: "center",
+                alignItems: "center",
                 justifyContent: "center",
                 gap: "8px"
               }}
@@ -340,4 +341,4 @@ export default function Perfil({ onNavigate }) {
       </main>
     </div>
   );
-          }
+}
