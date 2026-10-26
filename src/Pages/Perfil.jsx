@@ -144,7 +144,7 @@ export default function Perfil({ onNavigate }) {
       localStorage.removeItem("user");
       alert("Tu cuenta ha sido eliminada.");
       onNavigate("landing");
-    } catch (error) {
+    } catch {
       alert("Hubo un error al intentar eliminar la cuenta.");
     }
   }
@@ -308,30 +308,17 @@ export default function Perfil({ onNavigate }) {
           {/* ZONA DE PELIGRO: ELIMINAR CUENTA */}
           <div className={styles.divider} />
 
-          <div style={{ marginTop: "20px", textAlign: "left" }}>
-            <div className={styles.sectionTitle} style={{ color: "#e74c3c" }}>
+          <div className={styles.dangerZone}>
+            <div className={`${styles.sectionTitle} ${styles.dangerTitle}`}>
               <Trash2 size={16} /> Zona de peligro
             </div>
-            <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+            <p className={styles.dangerText}>
               Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, tenlo en cuenta.
             </p>
             <button
               type="button"
+              className={styles.btnDanger}
               onClick={handleEliminarCuenta}
-              style={{
-                backgroundColor: "#ffebee",
-                color: "#c62828",
-                border: "1px solid #ffcdd2",
-                padding: "10px 16px",
-                borderRadius: "8px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px"
-              }}
             >
               <Trash2 size={16} /> Eliminar mi cuenta
             </button>
@@ -341,4 +328,4 @@ export default function Perfil({ onNavigate }) {
       </main>
     </div>
   );
-}
+              }
