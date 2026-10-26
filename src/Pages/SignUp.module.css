@@ -1,4 +1,3 @@
-
 /* src/Pages/SignUp.module.css */
 .header {
   text-align: center;
@@ -80,30 +79,24 @@
   transition: background 0.3s ease;
 }
 
-/* El texto de la contraseña */
 .strengthLabel {
   font-size: 13px !important;
   font-weight: bold !important;
   display: block !important;
   margin-top: 4px !important;
-  background: transparent !important;
+  background: none !important;
+  text-decoration: none !important;
 }
 
-/* Colores específicos para cada nivel (tanto barras como texto) */
-.level1 { 
-  background-color: #dc3545 !important; 
-  color: #dc3545 !important; 
-} 
+/* Colores exclusivamente para las barras (Fondo) */
+.level1 { background-color: #dc3545 !important; } 
+.level2 { background-color: #d39e00 !important; } 
+.level3 { background-color: #28a745 !important; }
 
-.level2 { 
-  background-color: #d39e00 !important; 
-  color: #d39e00 !important; 
-} 
-
-.level3 { 
-  background-color: #28a745 !important; 
-  color: #28a745 !important; 
-}
+/* Colores exclusivamente para el TEXTO de las letras (Sin fondo) */
+.textLevel1 { color: #dc3545 !important; } /* Rojo para Débil */
+.textLevel2 { color: #d39e00 !important; } /* Amarillo para Media */
+.textLevel3 { color: #28a745 !important; } /* Verde para Fuerte */
 
 .fieldError {
   color: var(--color-error);
