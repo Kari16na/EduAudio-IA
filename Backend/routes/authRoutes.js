@@ -1,11 +1,9 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
+const bcrypt = bcryptjs = require('bcryptjs'); // o const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Resend } = require('resend');
 const User = require('../models/user');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 router.post('/forgot-password', async (req, res) => {
   try {
@@ -28,25 +26,34 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(500).json({ message: 'Falta configurar la API Key de Resend en el servidor.' });
     }
 
-    // Envío del correo mediante la API HTTP de Resend (nunca se bloquea en Railway)
-    const { error } = await resend.emails.send({
-      from: 'EduAudio IA <onboarding@resend.dev>', // O tu dominio personalizado si lo configuras luego
-      to: [user.email],
-      subject: 'Recuperar contraseña - EduAudio IA',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-          <h2 style="color: #4A3F8F;">🎧 EduAudio IA</h2>
-          <p>Hola <strong>${user.fullName}</strong>,</p>
-          <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-          <p>Haz clic en el botón para continuar:</p>
-          <a href="${resetLink}" style="display:inline-block;background:#F5A623;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0;">Restablecer contraseña</a>
-          <p style="color:#888;font-size:13px;">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
-        </div>
-      `,
+    // Petición HTTP pura con fetch (No requiere instalar ningún paquete npm)
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+      },
+      body: JSON.stringify({
+        from: 'EduAudio IA <onboarding@resend.dev>',
+        to: [user.email],
+        subject: 'Recuperar contraseña - EduAudio IA',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2 style="color: #4A3F8F;">🎧 EduAudio IA</h2>
+            <p>Hola <strong>${user.fullName}</strong>,</p>
+            <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+            <p>Haz clic en el botón para continuar:</p>
+            <a href="${resetLink}" style="display:inline-block;background:#F5A623;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0;">Restablecer contraseña</a>
+            <p style="color:#888;font-size:13px;">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
+          </div>
+        `
+      })
     });
 
-    if (error) {
-      console.error('Error de Resend:', error);
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Error de Resend:', data);
       return res.status(500).json({ message: 'Error al enviar el correo.' });
     }
 
@@ -85,3 +92,4 @@ router.post('/reset-password', async (req, res) => {
 });
 
 module.exports = router;
+                                 
