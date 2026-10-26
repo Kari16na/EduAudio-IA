@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
     return res.status(201).json({
       message: 'Usuario registrado correctamente.',
       token,
-      user: { id: newUser._id, fullName: newUser.fullName, email: newUser.email },
+      user: { id: newUser._id, fullName: newUser.fullName, email: newUser.email, profilePhoto: newUser.profilePhoto || '' },
     });
   } catch (error) {
     console.error('Error registrando usuario:', error.message);
@@ -132,10 +132,30 @@ router.post('/photo', authMiddleware, async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(req.userId, { profilePhoto: photo }, { new: true });
-    return res.json({ message: 'Foto de perfil actualizada.', user });
+    
+    // Devolvemos photoUrl y user para garantizar total compatibilidad con el frontend
+    return res.json({ 
+      message: 'Foto de perfil actualizada.', 
+      photoUrl: user.profilePhoto,
+      user 
+    });
   } catch (error) {
     console.error('Error actualizando foto de perfil:', error.message);
     return res.status(500).json({ message: 'Error al actualizar foto.' });
+  }
+});
+
+// NUEVA RUTA: Eliminar cuenta del usuario
+router.delete('/delete-account', authMiddleware, async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.userId);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+    return res.json({ message: 'Cuenta eliminada correctamente.' });
+  } catch (error) {
+    console.error('Error eliminando cuenta:', error.message);
+    return res.status(500).json({ message: 'Error al eliminar cuenta.' });
   }
 });
 

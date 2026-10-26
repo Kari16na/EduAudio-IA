@@ -1,21 +1,26 @@
 import { useState, useEffect } from "react";
 import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages } from "lucide-react";
 import NavBar from "../Components/NavBar";
-import { getAudios, generateAudio } from "../services/api";   // 👈 Importamos funciones del api.js
+import { getAudios, generateAudio } from "../services/api";
 import styles from "./Dashboard.module.css";
+
 export default function Dashboard({ onNavigate }) {
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const [file, setFile] = useState(null);
   const [idioma, setIdioma] = useState("es");
-  const [categoria, setCategoria] = useState("general");
-  const [modo, setModo] = useState("resumen"); // 👈 nuevo estado para elegir modo
+  
+  // Valores fijos predeterminados por debajo para que el backend no falle
+  const categoria = "general";
+  const modo = "resumen";
+
   const [loading, setLoading] = useState(false);
   const [totalAudios, setTotalAudios] = useState(0);
+
   useEffect(() => {
     async function contarAudios() {
       try {
         const token = localStorage.getItem("token");
-        const data = await getAudios(token);   // 👈 usamos la función centralizada
+        const data = await getAudios(token);
         if (Array.isArray(data)) setTotalAudios(data.length);
       } catch (error) {
         console.error("Error al cargar contador de audios:", error);
@@ -23,17 +28,19 @@ export default function Dashboard({ onNavigate }) {
     }
     contarAudios();
   }, []);
+
   function handleFile(e) {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   }
+
   async function handleGenerate() {
     if (!file) return;
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      // 👇 ahora pasamos también el modo
+      // Se envían los valores fijos al backend
       const data = await generateAudio(token, file, idioma, categoria, modo);
       if (!data || data.error || !data.audio) {
         alert(data?.message || data?.error || "Ocurrió un error al procesar el documento.");
@@ -48,6 +55,7 @@ export default function Dashboard({ onNavigate }) {
       setLoading(false);
     }
   }
+
   return (
     <div className={styles.page}>
       {loading && (
@@ -63,6 +71,7 @@ export default function Dashboard({ onNavigate }) {
           </div>
         </div>
       )}
+
       <NavBar
         onNavigate={onNavigate}
         rightContent={
@@ -91,15 +100,17 @@ export default function Dashboard({ onNavigate }) {
           </div>
         }
       />
+
       <main className={styles.main}>
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>
             <UploadCloud size={20} /> Subir Documento
           </h2>
           <p className={styles.cardSubtitle}>
-            Sube tu archivo PDF o Word y elige cómo quieres generar el audio.
+            Sube tu archivo PDF o Word para generar el resumen y su audio.
           </p>
-          {/* Idioma */}
+
+          {/* Selector de Idioma (Se mantiene) */}
           <label className={styles.label}>Idioma del audio:</label>
           <div className={styles.languageSelector} data-testid="language-selector">
             <button
@@ -119,27 +130,7 @@ export default function Dashboard({ onNavigate }) {
               <Languages size={16} /> English
             </button>
           </div>
-          {/* Categoría */}
-          <label className={styles.label}>Tipo de contenido:</label>
-          <select
-            className={styles.categorySelect}
-            data-testid="category-select"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-          >
-            <option value="general">General</option>
-            <option value="idiomas">Idiomas</option>
-          </select>
-          {/* Nuevo selector de modo */}
-          <label className={styles.label}>Modo de generación:</label>
-          <select
-            className={styles.modeSelect}
-            value={modo}
-            onChange={(e) => setModo(e.target.value)}
-          >
-            <option value="normal">Audio completo</option>
-            <option value="resumen">Resumen + Audio</option>
-          </select>
+
           {/* Subida de archivo */}
           <label className={styles.label}>Selecciona o arrastra tu archivo:</label>
           <label className={styles.dropZone}>
@@ -169,6 +160,7 @@ export default function Dashboard({ onNavigate }) {
               </div>
             )}
           </label>
+
           <button
             className={styles.btnGenerate}
             data-testid="upload-generate-btn"
@@ -178,6 +170,7 @@ export default function Dashboard({ onNavigate }) {
             <Music size={18} /> Generar Audio
           </button>
         </section>
+
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>
             <Headphones size={20} /> Mis Audios Recientes
