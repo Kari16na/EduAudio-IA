@@ -1,3 +1,4 @@
+/* src/Pages/SignUp.module.css */
 .header {
   text-align: center;
   margin-bottom: 28px;
@@ -58,7 +59,8 @@
 .strengthWrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 8px;
 }
 
@@ -69,7 +71,7 @@
 }
 
 .strengthBar {
-  height: 4px;
+  height: 5px;
   flex: 1;
   border-radius: 2px;
   background: rgba(0, 0, 0, 0.08);
@@ -77,8 +79,10 @@
 }
 
 .strengthLabel {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
+  min-width: 65px;
+  text-align: right;
   white-space: nowrap;
 }
 
