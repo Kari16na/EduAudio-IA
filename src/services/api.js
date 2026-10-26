@@ -90,3 +90,12 @@ export async function uploadProfilePhoto(token, file) {
   const res = await fetch(`${API_URL}/users/photo`, { method: "POST", headers: auth(token), body: formData });
   return res.json();
 }
+
+// 🗑️ Eliminar cuenta
+export async function deleteAccount(token) {
+  const res = await fetch(`${API_URL}/users/delete-account`, {
+    method: "DELETE",
+    headers: auth(token)
+  });
+  return res.json();
+}
