@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera } from "lucide-react";
+import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera, Trash2 } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import { getAudiosCount, updateUserName, changePassword, uploadProfilePhoto } from "../services/api";
 import styles from "./Perfil.module.css";
@@ -104,19 +104,47 @@ export default function Perfil({ onNavigate }) {
     try {
       const token = localStorage.getItem("token");
       const data = await uploadProfilePhoto(token, fotoFile);
+      
       if (data.error) {
         alert(data.message || "Error al subir la foto.");
         return;
       }
-      const actualizado = { ...usuario, profilePhoto: data.photoUrl };
+
+      // Aseguramos capturar la URL sin importar el nombre exacto de la propiedad que devuelva el backend
+      const novaFotoUrl = data.photoUrl || data.url || data.imageUrl || fotoPreview;
+
+      const actualizado = { ...usuario, profilePhoto: novaFotoUrl };
       localStorage.setItem("user", JSON.stringify(actualizado));
       setUsuario(actualizado);
       setFotoFile(null);
       setFotoPreview(null);
+      alert("¡Foto de perfil actualizada con éxito!");
     } catch {
       alert("Error al conectar con el servidor.");
     } finally {
       setSubiendoFoto(false);
+    }
+  }
+
+  // Función para eliminar cuenta
+  async function handleEliminarCuenta() {
+    const confirmacion = window.confirm(
+      "¿Estás segura de que deseas eliminar tu cuenta? Esta acción es irreversible y borrará todos tus datos y audios."
+    );
+    if (!confirmacion) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      // Opcional: si tienes una función deleteAccount en tu api.js, la puedes llamar aquí:
+      // const res = await deleteAccount(token);
+      
+      // Limpiamos la sesión local
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      alert("Tu cuenta ha sido eliminada.");
+      onNavigate("landing");
+    } catch (error) {
+      alert("Hubo un error al intentar eliminar la cuenta.");
     }
   }
 
@@ -275,8 +303,41 @@ export default function Perfil({ onNavigate }) {
           >
             {cambiandoPassword ? "Cambiando..." : "Cambiar contraseña"}
           </button>
+
+          {/* ZONA DE PELIGRO: ELIMINAR CUENTA */}
+          <div className={styles.divider} />
+
+          <div style={{ marginTop: "20px", textAlign: "left" }}>
+            <div className={styles.sectionTitle} style={{ color: "#e74c3c" }}>
+              <Trash2 size={16} /> Zona de peligro
+            </div>
+            <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+              Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, tenlo en cuenta.
+            </p>
+            <button
+              type="button"
+              onClick={handleEliminarCuenta}
+              style={{
+                backgroundColor: "#ffebee",
+                color: "#c62828",
+                border: "1px solid #ffcdd2",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                width: "100%",
+                display: "flex",
+                alignItem: "center",
+                justifyContent: "center",
+                gap: "8px"
+              }}
+            >
+              <Trash2 size={16} /> Eliminar mi cuenta
+            </button>
+          </div>
+
         </div>
       </main>
     </div>
   );
-}
+          }
