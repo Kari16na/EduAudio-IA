@@ -56,40 +56,42 @@
   border-color: var(--color-error) !important;
 }
 
+/* Indicador de Fortaleza de Contraseña */
 .strengthWrapper {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 8px;
+  width: 100%;
 }
 
 .strengthBars {
   display: flex;
-  gap: 4px;
-  flex: 1;
+  gap: 6px;
+  width: 100%;
 }
 
 .strengthBar {
-  height: 5px;
+  height: 6px;
   flex: 1;
-  border-radius: 2px;
+  border-radius: 3px;
   background: rgba(0, 0, 0, 0.08);
-  transition: background 0.3s;
+  transition: background 0.3s ease;
 }
 
 .strengthLabel {
   font-size: 12px;
   font-weight: bold;
-  min-width: 65px;
-  text-align: right;
-  white-space: nowrap;
+  display: block;
+  margin-top: 2px;
 }
 
-.level1 { background-color: #dc3545; color: #dc3545; }
-.level2 { background-color: #fd7e14; color: #fd7e14; }
-.level3 { background-color: #ffc107; color: #ffc107; }
-.level4 { background-color: #28a745; color: #28a745; }
+/* Colores dinámicos por nivel */
+.level1 { background-color: #dc3545 !important; color: #dc3545; }
+.level2 { background-color: #fd7e14 !important; color: #fd7e14; }
+.level3 { background-color: #f1c40f !important; color: #d39e00; }
+.level4 { background-color: #28a745 !important; color: #28a745; }
 
 .fieldError {
   color: var(--color-error);
