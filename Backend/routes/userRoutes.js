@@ -36,7 +36,12 @@ router.post('/register', async (req, res) => {
     return res.status(201).json({
       message: 'Usuario registrado correctamente.',
       token,
-      user: { id: newUser._id, fullName: newUser.fullName, email: newUser.email, profilePhoto: newUser.profilePhoto || '' },
+      user: { 
+        id: newUser._id, 
+        fullName: newUser.fullName, 
+        email: newUser.email, 
+        profilePhoto: newUser.profilePhoto || '' 
+      },
     });
   } catch (error) {
     console.error('Error registrando usuario:', error.message);
@@ -66,7 +71,12 @@ router.post('/login', async (req, res) => {
     return res.json({
       message: 'Inicio de sesión exitoso.',
       token,
-      user: { id: user._id, fullName: user.fullName, email: user.email, profilePhoto: user.profilePhoto || '' },
+      user: { 
+        id: user._id, 
+        fullName: user.fullName, 
+        email: user.email, 
+        profilePhoto: user.profilePhoto || '' 
+      },
     });
   } catch (error) {
     console.error('Error iniciando sesión:', error.message);
@@ -89,7 +99,12 @@ router.put('/update', authMiddleware, async (req, res) => {
 
     return res.json({
       message: 'Perfil actualizado correctamente.',
-      user: { id: updatedUser._id, fullName: updatedUser.fullName, email: updatedUser.email },
+      user: { 
+        id: updatedUser._id, 
+        fullName: updatedUser.fullName, 
+        email: updatedUser.email, 
+        profilePhoto: updatedUser.profilePhoto || '' 
+      },
     });
   } catch (error) {
     console.error('Error actualizando usuario:', error.message);
@@ -133,11 +148,15 @@ router.post('/photo', authMiddleware, async (req, res) => {
 
     const user = await User.findByIdAndUpdate(req.userId, { profilePhoto: photo }, { new: true });
     
-    // Devolvemos photoUrl y user para garantizar total compatibilidad con el frontend
     return res.json({ 
       message: 'Foto de perfil actualizada.', 
       photoUrl: user.profilePhoto,
-      user 
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        profilePhoto: user.profilePhoto || ''
+      }
     });
   } catch (error) {
     console.error('Error actualizando foto de perfil:', error.message);
@@ -145,7 +164,6 @@ router.post('/photo', authMiddleware, async (req, res) => {
   }
 });
 
-// NUEVA RUTA: Eliminar cuenta del usuario
 router.delete('/delete-account', authMiddleware, async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.userId);
