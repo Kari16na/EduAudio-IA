@@ -48,8 +48,27 @@ function parsearYLimpiar(resumen) {
   return { textoAudio, parrafos };
 }
 
+/**
+ * Filtro inteligente para saltar tablas de contenido, índices y portadas institucionales
+ * al inicio de los PDFs largos (como los del SENA).
+ */
 function prepararTextoLargo(textoCrudo) {
-  return String(textoCrudo || '').trim();
+  let texto = String(textoCrudo || '').trim();
+  if (texto.length < 2000) return texto;
+
+  // Busca si en los primeros 3000 caracteres hay un índice o tabla de contenido típica
+  const inicioLower = texto.slice(0, 3000).toLowerCase();
+  if (inicioLower.includes('tabla de contenido') || inicioLower.includes('índice general') || inicioLower.includes('control del documento')) {
+    // Intentamos buscar dónde empiezan los temas reales (ej. "1.", "Introducción", "Módulo", "Unidad")
+    const matchTema = texto.search(/(introducci[oó]n|unidad\s+1|m[oó]dulo\s+1|cap[ií]tulo\s+1|\n1\.\s+[A-Z])/i);
+    if (matchTema > 0 && matchTema < 8000) {
+      // Recortamos la basura del índice inicial y empezamos desde el contenido real
+      texto = texto.slice(matchTema);
+    }
+  }
+
+  // Si el texto es extremadamente largo, nos aseguramos de no saturar los tokens manteniendo lo más valioso
+  return texto.slice(0, 45000);
 }
 
 async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
@@ -82,12 +101,10 @@ Reglas de formato estricto (Optimizado para síntesis de voz / gTTS):
 Texto bruto a procesar:
 ${contenido}`;
 
-  // Obtenemos la clave y limpiamos espacios y comillas accidentales de Railway
   let apiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
-  apiKey = apiKey.replace(/^["']|["']$/g, ''); // Remueve comillas al inicio o final si las hubiera
+  apiKey = apiKey.replace(/^["']|["']$/g, '');
 
   if (!apiKey) {
-    console.warn('⚠️ Advertencia: No se encontró GEMINI_API_KEY en las variables de entorno. Usando texto plano de respaldo.');
     return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 
