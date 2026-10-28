@@ -141,13 +141,23 @@ router.put('/change-password', authMiddleware, async (req, res) => {
 
 router.post('/photo', authMiddleware, async (req, res) => {
   try {
-    const { photo } = req.body || {};
-    if (!photo) {
+    // CORRECCIÓN CLAVE: Acepta cualquier propiedad con la que el frontend envíe la foto
+    const photoValue = req.body.photo || req.body.image || req.body.profilePhoto || (typeof req.body === 'string' ? req.body : null);
+
+    if (!photoValue) {
       return res.status(400).json({ message: 'La foto es obligatoria.' });
     }
 
-    const user = await User.findByIdAndUpdate(req.userId, { profilePhoto: photo }, { new: true });
+    const user = await User.findByIdAndUpdate(
+      req.userId, 
+      { profilePhoto: photoValue }, 
+      { new: true }
+    );
     
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
     return res.json({ 
       message: 'Foto de perfil actualizada.', 
       photoUrl: user.profilePhoto,
