@@ -254,65 +254,101 @@ export default function Perfil({ onNavigate }) {
             <Lock size={16} /> Cambiar contraseña
           </div>
 
-          {/* Contraseña actual con botón de ojo */}
+          {/* Contraseña actual con ancho completo y ojo flotante */}
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Contraseña actual</label>
-            <div className={styles.passwordContainer}>
+            <div style={{ position: "relative", width: "100%" }}>
               <input
-                className={styles.inputPassword}
+                className={styles.input}
                 type={showCurrentPassword ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Tu contraseña actual"
+                style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }}
               />
               <button
                 type="button"
-                className={styles.eyeButton}
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                  display: "flex",
+                  alignItem: "center"
+                }}
               >
-                {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Nueva contraseña con botón de ojo */}
+          {/* Nueva contraseña con ancho completo y ojo flotante */}
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Nueva contraseña</label>
-            <div className={styles.passwordContainer}>
+            <div style={{ position: "relative", width: "100%" }}>
               <input
-                className={styles.inputPassword}
+                className={styles.input}
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Nueva contraseña"
+                style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }}
               />
               <button
                 type="button"
-                className={styles.eyeButton}
                 onClick={() => setShowNewPassword(!showNewPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                  display: "flex",
+                  alignItem: "center"
+                }}
               >
-                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Confirmar contraseña con botón de ojo */}
+          {/* Confirmar contraseña con ancho completo y ojo flotante */}
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Confirmar contraseña</label>
-            <div className={styles.passwordContainer}>
+            <div style={{ position: "relative", width: "100%" }}>
               <input
-                className={styles.inputPassword}
+                className={styles.input}
                 type={showConfirmNewPassword ? "text" : "password"}
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
                 placeholder="Repite la nueva contraseña"
+                style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }}
               />
               <button
                 type="button"
-                className={styles.eyeButton}
                 onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                  display: "flex",
+                  alignItem: "center"
+                }}
               >
-                {showConfirmNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showConfirmNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
@@ -363,5 +399,4 @@ export default function Perfil({ onNavigate }) {
       </main>
     </div>
   );
-    }
-            
+              }
