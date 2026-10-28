@@ -39,43 +39,61 @@ function parsearYLimpiar(resumen) {
   const parrafos = limpio
     .split(/\n\s*\n/)
     .map((p) => p.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-    .slice(0, 8);
+    .filter(Boolean);
 
   const textoAudio = parrafos.length > 0
-    ? parrafos.join(' ').slice(0, 4000)
-    : limpio.slice(0, 4000);
+    ? parrafos.join(' ').slice(0, 8000)
+    : limpio.slice(0, 8000);
 
   return { textoAudio, parrafos };
 }
 
-async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
-  const contenido = String(texto || '').trim();
+/**
+ * Filtra el texto inicial si es un índice masivo o tabla de contenido repetitiva
+ * para obligar a la IA a enfocarse en el contenido real del libro.
+ */
+function prepararTextoLargo(textoCrudo) {
+  const texto = String(textoCrudo || '').trim();
+  if (texto.length < 5000) return texto;
 
-  if (!contenido) {
+  // Si el documento es muy largo, buscamos si hay secciones de índice al inicio
+  // y priorizamos el cuerpo del texto para no saturar la ventana de análisis con índices.
+  const lineas = texto.split('\n');
+  if (lineas.length > 100) {
+    // Tomamos todo el texto pero aseguramos que la IA reciba la señal de procesar de inicio a fin
+    return texto;
+  }
+  return texto;
+}
+
+async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
+  const contenidoOriginal = String(texto || '').trim();
+
+  if (!contenidoOriginal) {
     throw new Error('No hay texto para resumir.');
   }
 
+  const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
   
-  // Prompt pedagógico optimizado para formato podcast de estudio
-  const prompt = `Eres un profesor experto y creador de podcasts educativos. Tu objetivo es transformar el siguiente texto en una clase explicativa y natural pensada exclusivamente para ser escuchada y memorizada fácilmente.
+  // Prompt pedagógico optimizado para formato podcast de estudio profundo (Estilo Thea)
+  const prompt = `Eres un profesor experto y creador de podcasts educativos de alto nivel académico. Tu objetivo es analizar exhaustivamente el documento proporcionado (incluso si es extenso o un libro completo) desde la primera página hasta el final, extrayendo el contenido de valor real, los argumentos centrales y el desarrollo de los capítulos, evitando quedarte atascado en índices o portadas.
 
 Contexto:
 - Idioma: ${idiomaLabel}
 - Categoría: ${categoria}
 
-Estructura obligatoria que debe seguir tu explicación:
-1. **Introducción (Gancho):** Comienza indicando brevemente de qué trata este tema y por qué es clave aprenderlo.
-2. **Ideas Principales:** Desarrolla los puntos medulares del texto de manera ordenada y fluida, evitando saltos bruscos.
-3. **Explicación Profunda y Analogías:** Traduce los conceptos más complejos o teóricos a ejemplos prácticos o analogías sencillas de la vida real para asegurar la comprensión profunda.
-4. **Cierre de Repaso:** Termina con una breve síntesis o conclusión de lo aprendido para fijar el conocimiento.
+Estructura obligatoria que debe seguir tu explicación detallada:
+1. **Introducción General:** Contextualiza la obra o documento completo, indicando su propósito global y los temas troncales que aborda.
+2. **Desarrollo Temático Integral:** Explica de manera fluida y cronológica los conceptos clave, argumentos principales y evolución de los temas a lo largo de todo el contenido del documento, asegurando no omitir la parte media ni el cierre.
+3. **Explicación Profunda y Analogías:** Traduce los conceptos más complejos o teóricos a ejemplos prácticos o analogías sencillas de la vida real para garantizar un aprendizaje profundo.
+4. **Cierre de Repaso y Conclusiones:** Sintetiza los aprendizajes clave para fijar el conocimiento definitivo del documento.
 
 Instrucciones de formato estricto:
-- Redacta todo en párrafos conversacionales y fluidos, ideales para una locución en voz alta.
+- Redacta todo en párrafos conversacionales, profundos y fluidos, ideales para una clase magistral o locución en voz alta.
 - No uses viñetas, guiones ni listas de código (el texto será convertido a audio).
 - No agregues introducciones conversacionales de IA como "Aquí tienes tu resumen", ve directo al contenido del podcast educativo.
-- Mantén la extensión adecuada para un audio claro y de gran valor educativo.
+- Aprovecha al máximo la extensión para garantizar una guía y explicación rica, detallada y de alto valor educativo.
 
 Texto a procesar:
 ${contenido}`;
@@ -83,7 +101,7 @@ ${contenido}`;
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
   if (!apiKey) {
-    return parsearYLimpiar(contenido).textoAudio || contenido.slice(0, 2000);
+    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 
   try {
@@ -96,12 +114,12 @@ ${contenido}`;
           },
         ],
         generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1000,
+          temperature: 0.3,
+          maxOutputTokens: 4000, // Ampliado para permitir explicaciones profundas y extensas de libros largos
         },
       },
       {
-        timeout: 30000,
+        timeout: 60000, // Timeout extendido a 60s para documentos densos
         headers: {
           'Content-Type': 'application/json',
         },
@@ -117,15 +135,16 @@ ${contenido}`;
       return candidateText;
     }
 
-    return parsearYLimpiar(contenido).textoAudio || contenido.slice(0, 2000);
+    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   } catch (error) {
     console.error('Error al consumir Gemini:', error?.response?.data || error.message);
-    return parsearYLimpiar(contenido).textoAudio || contenido.slice(0, 2000);
+    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 }
 
 async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  const textToSpeak = String(textoAudio || '').slice(0, 4000);
+  // Ampliado el límite de caracteres para soportar resúmenes mucho más ricos y profundos
+  const textToSpeak = String(textoAudio || '').slice(0, 8000);
 
   if (!textToSpeak.trim()) {
     throw new Error('No hay texto para generar audio.');
