@@ -19,8 +19,11 @@ function normalizePublicAudioUrl(audioUrl) {
   return `${normalizedBase}/${url.replace(/^\/+/, '')}`;
 }
 
+/**
+ * Limpia y formatea la respuesta para que el frontend la lea perfectamente en Markdown
+ */
 function parsearYLimpiar(resumen) {
-  const texto = String(resumen || '').replace(/```/g, '').trim();
+  const texto = String(resumen || '').replace(/```json/g, '').replace(/```/g, '').trim();
 
   if (!texto) {
     return {
@@ -29,45 +32,35 @@ function parsearYLimpiar(resumen) {
     };
   }
 
-  const limpio = texto
-    .replace(/\r/g, '')
-    .replace(/^[-*•]\s*/gm, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\s+\n/g, '\n')
-    .trim();
-
-  const parrafos = limpio
+  const parrafos = texto
     .split(/\n\s*\n/)
-    .map((p) => p.replace(/\s+/g, ' ').trim())
+    .map((p) => p.trim())
     .filter(Boolean);
 
-  const textoAudio = parrafos.length > 0
-    ? parrafos.join(' ').slice(0, 8000)
-    : limpio.slice(0, 8000);
+  // Texto adaptado para el reproductor de audio (sin símbolos Markdown pesados)
+  const textoAudio = texto
+    .replace(/[#*_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, 8000);
 
   return { textoAudio, parrafos };
 }
 
 /**
- * Filtro inteligente para saltar tablas de contenido, índices y portadas institucionales
- * al inicio de los PDFs largos (como los del SENA).
+ * Filtro inteligente para saltar tablas de contenido e índices iniciales del SENA
  */
 function prepararTextoLargo(textoCrudo) {
   let texto = String(textoCrudo || '').trim();
   if (texto.length < 2000) return texto;
 
-  // Busca si en los primeros 3000 caracteres hay un índice o tabla de contenido típica
   const inicioLower = texto.slice(0, 3000).toLowerCase();
   if (inicioLower.includes('tabla de contenido') || inicioLower.includes('índice general') || inicioLower.includes('control del documento')) {
-    // Intentamos buscar dónde empiezan los temas reales (ej. "1.", "Introducción", "Módulo", "Unidad")
     const matchTema = texto.search(/(introducci[oó]n|unidad\s+1|m[oó]dulo\s+1|cap[ií]tulo\s+1|\n1\.\s+[A-Z])/i);
     if (matchTema > 0 && matchTema < 8000) {
-      // Recortamos la basura del índice inicial y empezamos desde el contenido real
       texto = texto.slice(matchTema);
     }
   }
 
-  // Si el texto es extremadamente largo, nos aseguramos de no saturar los tokens manteniendo lo más valioso
   return texto.slice(0, 45000);
 }
 
@@ -81,22 +74,21 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
   
-  const prompt = `Actúa como un locutor experto en podcasts educativos y un neuroeducador especialista en aprendizaje auditivo. Tu misión es transformar el documento proporcionado en una clase en audio altamente asimilable, sabiendo que el oyente no puede releer y necesita claridad absoluta.
-
-Aplica estrictamente esta estructura basada en ciencia cognitiva para audio:
-1. **Organizador Previo:** Abre los primeros segundos dando el mapa general: explica de qué tratará la sesión, por qué es importante y cuáles son los puntos clave que vamos a dominar.
-2. **Explicación Causal (El porqué, no solo el qué):** Desarrolla los conceptos con frases cortas y directas, enfocándote en la lógica y la causa-efecto, evitando tecnicismos innecesarios o densos.
-3. **Ejemplos Concretos:** Traduce de inmediato la teoría a un ejemplo de la vida real o del ámbito profesional.
-4. **Repetición Inteligente de Cierre:** Antes de terminar, haz un breve repaso o resumen retomando las ideas centrales para activar la recuperación activa en la mente del oyente y fijar el conocimiento.
+  // PROMPT MAESTRO DE NIVEL THEA (Estructura de Guía de Estudio Profesional)
+  const prompt = `Actúa como un Diseñador Instruccional Senior y Experto en Curaduría de Contenidos Académicos. Tu misión es transformar el documento proporcionado en una **Guía de Estudio Profesional y Estructurada** (idéntica al estándar de calidad de plataformas avanzadas como Thea o NotebookLM).
 
 Contexto:
 - Idioma: ${idiomaLabel}
 - Categoría: ${categoria}
 
-Reglas de formato estricto (Optimizado para síntesis de voz / gTTS):
-- Utiliza frases cortas, dinámicas y un tono conversacional, cálido y fluido.
-- ESTRICTAMENTE PROHIBIDO usar viñetas, guiones, asteriscos, numeraciones o símbolos. Todo debe redactarse en párrafos corridos pensados exclusivamente para ser escuchados.
-- Ve directo al grano: sin saludos robóticos de IA.
+Reglas estrictas de formato y contenido que DEBES seguir rigurosamente:
+1. **Estructura en Markdown Limpio:** Utiliza "#" para el título principal, "##" para las secciones clave y "###" para subtemas o conceptos específicos.
+2. **Eliminación Absoluta de Ruido:** Ignora por completo índices, portadas, números de página, créditos institucionales y textos repetitivos del inicio. Ve directo al contenido académico.
+3. **Estructura Académica Obligatoria:**
+   - **Introducción:** Explica de forma concisa de qué trata el documento y por qué es fundamental dominarlo.
+   - **Desarrollo Temático por Secciones:** Organiza los conceptos clave en bloques lógicos y cronológicos. Utiliza viñetas cortas ("*") únicamente para listar características, elementos o definiciones importantes para mantener una lectura visualmente impecable.
+   - **Conceptos Clave Explicados:** Desglosa los términos técnicos complejos de forma clara y con sentido práctico (explicando el qué y el porqué).
+   - **Síntesis y Conclusiones:** Un cierre potente que consolide el aprendizaje definitivo.
 
 Texto bruto a procesar:
 ${contenido}`;
@@ -109,7 +101,7 @@ ${contenido}`;
   }
 
   try {
-    const endpoint = '[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent)';
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     const requestUrl = `${endpoint}?key=${apiKey}`;
 
     const response = await axios.post(
