@@ -82,9 +82,12 @@ Reglas de formato estricto (Optimizado para síntesis de voz / gTTS):
 Texto bruto a procesar:
 ${contenido}`;
 
-  const apiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
+  // Obtenemos la clave y limpiamos espacios y comillas accidentales de Railway
+  let apiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
+  apiKey = apiKey.replace(/^["']|["']$/g, ''); // Remueve comillas al inicio o final si las hubiera
 
   if (!apiKey) {
+    console.warn('⚠️ Advertencia: No se encontró GEMINI_API_KEY en las variables de entorno. Usando texto plano de respaldo.');
     return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 
