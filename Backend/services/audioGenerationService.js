@@ -4,8 +4,6 @@ const axios = require('axios');
 const gTTS = require('gtts');
 const cloudinary = require('../config/cloudinary');
 
-const MAX_CHARS_AUDIO = 20000;
-
 const baseUrl = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://eduaudio-ia-production.up.railway.app';
 const normalizedBase = String(baseUrl).replace(/\/$/, '');
 
@@ -21,20 +19,8 @@ function normalizePublicAudioUrl(audioUrl) {
   return `${normalizedBase}/${url.replace(/^\/+/, '')}`;
 }
 
-/**
- * Quita símbolos de Markdown, viñetas y numeraciones que el lector de voz pronunciaría mal.
- */
-function limpiarParaVoz(t) {
-  return String(t || '')
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/[*_#>`~]/g, '')
-    .replace(/^\s*[-•]\s+/gm, '')
-    .replace(/^\s*\d+[.)]\s+/gm, '')
-    .replace(/\s+\n/g, '\n');
-}
-
 function parsearYLimpiar(resumen) {
-  const texto = limpiarParaVoz(String(resumen || '')).trim();
+  const texto = String(resumen || '').replace(/```/g, '').trim();
 
   if (!texto) {
     return {
@@ -56,24 +42,14 @@ function parsearYLimpiar(resumen) {
     .filter(Boolean);
 
   const textoAudio = parrafos.length > 0
-    ? parrafos.join(' ').slice(0, MAX_CHARS_AUDIO)
-    : limpio.slice(0, MAX_CHARS_AUDIO);
+    ? parrafos.join(' ').slice(0, 8000)
+    : limpio.slice(0, 8000);
 
   return { textoAudio, parrafos };
 }
 
-/**
- * Limpia el texto crudo del documento (puntos de índice, espacios, saltos de línea)
- * y lo limita a un tamaño seguro.
- */
-function prepararTextoLargo(textoCrudo, maxChars = 60000) {
-  return String(textoCrudo || '')
-    .replace(/\r/g, '')
-    .replace(/\.{4,}\s*\d*/g, ' ') // puntos suspensivos del índice + número de página
-    .replace(/[ \t]{2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-    .slice(0, maxChars);
+function prepararTextoLargo(textoCrudo) {
+  return String(textoCrudo || '').trim();
 }
 
 async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
@@ -85,72 +61,76 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
 
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
+  
+  // Prompt cognitivo optimizado 100% para aprendizaje auditivo (Audio / Podcast)
+  const prompt = `Actúa como un locutor experto en podcasts educativos y un neuroeducador especialista en aprendizaje auditivo. Tu misión es transformar el documento proporcionado en una clase en audio altamente asimilable, sabiendo que el oyente no puede releer y necesita claridad absoluta.
 
-  const prompt = `Eres un profesor experto en ciencia del aprendizaje. Convierte el documento en una explicación hablada que haga que el oyente ENTIENDA y RECUERDE el contenido, escuchándolo una sola vez.
+Aplica estrictamente esta estructura basada en ciencia cognitiva para audio:
+1. **Organizador Previo:** Abre los primeros segundos dando el mapa general: explica de qué tratará la sesión, por qué es importante y cuáles son los puntos clave que vamos a dominar.
+2. **Explicación Causal (El porqué, no solo el qué):** Desarrolla los conceptos con frases cortas y directas, enfocándote en la lógica y la causa-efecto, evitando tecnicismos innecesarios o densos.
+3. **Ejemplos Concretos:** Traduce de inmediato la teoría a un ejemplo de la vida real o del ámbito profesional.
+4. **Repetición Inteligente de Cierre:** Antes de terminar, haz un breve repaso o resumen retomando las ideas centrales para activar la recuperación activa en la mente del oyente y fijar el conocimiento.
 
-Idioma: ${idiomaLabel}. Categoría: ${categoria}.
+Contexto:
+- Idioma: ${idiomaLabel}
+- Categoría: ${categoria}
 
-Ignora por completo portada, índice, tabla de contenido, números de página, créditos, fechas y texto repetido. Trabaja solo con el contenido real.
+Reglas de formato estricto (Optimizado para síntesis de voz / gTTS):
+- Utiliza frases cortas, dinámicas y un tono conversacional, cálido y fluido.
+- ESTRICTAMENTE PROHIBIDO usar viñetas, guiones, asteriscos, numeraciones o símbolos. Todo debe redactarse en párrafos corridos pensados exclusivamente para ser escuchados.
+- Ve directo al grano: sin saludos robóticos de IA.
 
-Estructura que debes seguir:
-1. Mapa inicial: en pocas frases, di de qué trata el tema, para qué sirve y qué va a aprender el oyente. Anuncia cuántas ideas principales verá.
-2. Desarrollo: explica cada idea principal en orden lógico, de lo general a lo particular. Por cada idea: primero la definición en lenguaje simple, luego el porqué y para qué sirve, luego un ejemplo concreto o una analogía de la vida real, y termina con una frase que resuma la idea.
-3. Conexiones: relaciona cada idea con las anteriores para que el oyente vea el tema como un todo, no como datos sueltos. Señala diferencias entre conceptos que se confunden fácilmente.
-4. Práctica activa: antes del cierre, formula 3 preguntas de comprensión sobre lo más importante. Después de cada pregunta di "piensa tu respuesta" y luego da la respuesta correcta con una breve explicación.
-5. Repaso final: repite las ideas esenciales en pocas frases claras y cierra con una idea memorable que resuma todo.
-
-Reglas de estilo (será leído por un sintetizador de voz):
-- Un solo narrador, tono claro, cercano y profesional.
-- Frases cortas y fáciles de seguir al oído. Explica cualquier término técnico la primera vez que aparezca.
-- Redacta solo en párrafos hablados. Prohibido usar viñetas, guiones, asteriscos, numeraciones, títulos o símbolos.
-- No uses saludos ni frases como "aquí tienes". Empieza directo con el mapa inicial.
-- No inventes datos que no estén en el documento. Cubre todo el documento, incluyendo la parte media y final.
-
-Documento:
+Texto bruto a procesar:
 ${contenido}`;
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
   if (!apiKey) {
-    throw new Error('Falta GEMINI_API_KEY en las variables de entorno.');
+    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 
-  const geminiUrl =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-
   try {
+    const geminiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$){apiKey}`;
+
     const response = await axios.post(
       geminiUrl,
       {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 8000 },
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 4000,
+        },
       },
       {
-        timeout: 120000,
+        timeout: 60000,
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
         },
       }
     );
 
     const candidateText = response?.data?.candidates?.[0]?.content?.parts
-      ?.map((p) => p.text)
+      ?.map((part) => part.text)
       ?.join('')
       ?.trim();
 
-    if (!candidateText) {
-      throw new Error('Gemini no devolvió contenido.');
+    if (candidateText) {
+      return candidateText;
     }
 
-    return candidateText;
+    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   } catch (error) {
-    console.error('Error Gemini:', error?.response?.data || error.message);
-    throw new Error('No se pudo generar el resumen con IA. Intenta de nuevo.');
+    console.error('Error al consumir Gemini:', error?.response?.data || error.message);
+    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 }
 
 async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  const textToSpeak = String(textoAudio || '').slice(0, MAX_CHARS_AUDIO);
+  const textToSpeak = String(textoAudio || '').slice(0, 8000);
 
   if (!textToSpeak.trim()) {
     throw new Error('No hay texto para generar audio.');
@@ -175,7 +155,7 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
   await new Promise((resolve, reject) => {
     const gtts = new gTTS(textToSpeak, lang);
     gtts.save(tempFile, (err) => {
-      if (err) {
+      if, (err) {
         reject(err);
         return;
       }
@@ -209,8 +189,6 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
 
 module.exports = {
   parsearYLimpiar,
-  prepararTextoLargo,
   resumirConGemini,
   generarArchivoAudioMp3,
-  normalizePublicAudioUrl,
 };
