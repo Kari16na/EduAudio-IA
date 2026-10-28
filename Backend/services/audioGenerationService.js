@@ -62,7 +62,6 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
   
-  // Prompt cognitivo optimizado 100% para aprendizaje auditivo (Audio / Podcast)
   const prompt = `Actúa como un locutor experto en podcasts educativos y un neuroeducador especialista en aprendizaje auditivo. Tu misión es transformar el documento proporcionado en una clase en audio altamente asimilable, sabiendo que el oyente no puede releer y necesita claridad absoluta.
 
 Aplica estrictamente esta estructura basada en ciencia cognitiva para audio:
@@ -155,7 +154,7 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
   await new Promise((resolve, reject) => {
     const gtts = new gTTS(textToSpeak, lang);
     gtts.save(tempFile, (err) => {
-      if, (err) {
+      if (err) { // <-- Corregido el error de sintaxis aquí
         reject(err);
         return;
       }
