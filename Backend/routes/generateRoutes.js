@@ -3,7 +3,12 @@ const router = express.Router();
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { parsearYLimpiar, resumirConGemini, generarArchivoAudioMp3 } = require('../services/audioGenerationService');
+const {
+  parsearYLimpiar,
+  prepararTextoLargo,
+  resumirConGemini,
+  generarArchivoAudioMp3,
+} = require('../services/audioGenerationService');
 const Audio = require('../models/Audio');
 const authMiddleware = require('../middleware/auth');
 
@@ -11,7 +16,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const isPdf = file.mimetype === 'application/pdf';
     const isDocx = file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     if (isPdf || isDocx || /\.(pdf|docx)$/i.test(file.originalname || '')) {
@@ -45,14 +49,25 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
     }
 
     const fileName = req.file.originalname;
-    let textoAudio = texto;
-    let parrafos = [texto];
+    let textoAudio;
+    let parrafos;
 
     if (modo === 'resumen') {
       const resumenCompleto = await resumirConGemini(texto, idioma, categoria);
       const parsed = parsearYLimpiar(resumenCompleto);
       textoAudio = parsed.textoAudio;
       parrafos = parsed.parrafos;
+    } else {
+      // Modo normal: lee el documento tal cual, pero sin los puntos del índice
+      textoAudio = prepararTextoLargo(texto, 20000);
+      parrafos = textoAudio
+        .split(/\n\s*\n/)
+        .map((p) => p.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+    }
+
+    if (!textoAudio || !textoAudio.trim()) {
+      return res.status(400).json({ message: 'No se pudo generar contenido para el audio.' });
     }
 
     const audioUrl = await generarArchivoAudioMp3({ textoAudio, idioma, userId: req.userId, fileName });
@@ -77,3 +92,4 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
 });
 
 module.exports = router;
+  
