@@ -82,17 +82,18 @@ Reglas de formato estricto (Optimizado para síntesis de voz / gTTS):
 Texto bruto a procesar:
 ${contenido}`;
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
 
   if (!apiKey) {
     return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
   }
 
   try {
-    const geminiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$){apiKey}`;
+    const endpoint = '[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent)';
+    const requestUrl = `${endpoint}?key=${apiKey}`;
 
     const response = await axios.post(
-      geminiUrl,
+      requestUrl,
       {
         contents: [
           {
@@ -154,7 +155,7 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
   await new Promise((resolve, reject) => {
     const gtts = new gTTS(textToSpeak, lang);
     gtts.save(tempFile, (err) => {
-      if (err) { // <-- Corregido el error de sintaxis aquí
+      if (err) {
         reject(err);
         return;
       }
