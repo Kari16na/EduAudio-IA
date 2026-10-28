@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = path = require('path');
+const path = require('path');
 const axios = require('axios');
 const gTTS = require('gtts');
 const cloudinary = require('../config/cloudinary');
