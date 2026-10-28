@@ -3,12 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const {
-  parsearYLimpiar,
-  prepararTextoLargo,
-  resumirConGemini,
-  generarArchivoAudioMp3,
-} = require('../services/audioGenerationService');
+const { parsearYLimpiar, resumirConGemini, generarArchivoAudioMp3 } = require('../services/audioGenerationService');
 const Audio = require('../models/Audio');
 const authMiddleware = require('../middleware/auth');
 
@@ -25,6 +20,22 @@ const upload = multer({
   },
 });
 
+/**
+ * Función para limpiar la "basura" típica de PDFs institucionales (ej. SENA: cabeceras, índices, números de página)
+ */
+function limpiarTextoPdfInstitucional(textoCrudo) {
+  if (!textoCrudo) return '';
+
+  return textoCrudo
+    .replace(/Grupo de Ejecución de la Formación Virtual/gi, '')
+    .replace(/SENA/gi, '')
+    .replace(/^\s*\d+\s*$/gm, '')
+    .replace(/https?:\/\/[^\s]+/g, '')
+    .replace(/\r/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 router.post('/', authMiddleware, upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
@@ -38,36 +49,25 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
     let texto = '';
     if (req.file.mimetype === 'application/pdf' || /\.pdf$/i.test(req.file.originalname || '')) {
       const pdfData = await pdfParse(req.file.buffer);
-      texto = pdfData.text;
+      texto = limpiarTextoPdfInstitucional(pdfData.text);
     } else {
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
       texto = result.value;
     }
 
     if (!texto || texto.trim().length === 0) {
-      return res.status(400).json({ message: 'No se pudo extraer texto del documento.' });
+      return res.status(400).json({ message: 'No se pudo extraer texto limpio del documento.' });
     }
 
     const fileName = req.file.originalname;
-    let textoAudio;
-    let parrafos;
+    let textoAudio = texto;
+    let parrafos = [texto];
 
     if (modo === 'resumen') {
       const resumenCompleto = await resumirConGemini(texto, idioma, categoria);
       const parsed = parsearYLimpiar(resumenCompleto);
       textoAudio = parsed.textoAudio;
       parrafos = parsed.parrafos;
-    } else {
-      // Modo normal: lee el documento tal cual, pero sin los puntos del índice
-      textoAudio = prepararTextoLargo(texto, 20000);
-      parrafos = textoAudio
-        .split(/\n\s*\n/)
-        .map((p) => p.replace(/\s+/g, ' ').trim())
-        .filter(Boolean);
-    }
-
-    if (!textoAudio || !textoAudio.trim()) {
-      return res.status(400).json({ message: 'No se pudo generar contenido para el audio.' });
     }
 
     const audioUrl = await generarArchivoAudioMp3({ textoAudio, idioma, userId: req.userId, fileName });
@@ -92,4 +92,3 @@ router.post('/', authMiddleware, upload.single('document'), async (req, res) => 
 });
 
 module.exports = router;
-  
