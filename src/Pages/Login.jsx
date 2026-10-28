@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { KeyRound, AlertCircle } from "lucide-react";
+import { KeyRound, AlertCircle, Eye, EyeOff } from "lucide-react";
 import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";   // ahora API_URL viene de process.env
+import { API_URL } from "../config";
 import styles from "./Login.module.css";
 
 export default function Login({ onNavigate }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
 
   async function handleLogin() {
@@ -16,7 +17,6 @@ export default function Login({ onNavigate }) {
     }
     setError(null);
     try {
-      // Se utiliza API_URL para reemplazar localhost
       const res = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,14 +61,35 @@ export default function Login({ onNavigate }) {
 
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Contraseña:</label>
-        <input
-          className={styles.input}
-          type="password"
-          data-testid="login-password"
-          placeholder="Tu contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div style={{ position: "relative", width: "100%" }}>
+          <input
+            className={styles.input}
+            type={showPassword ? "text" : "password"}
+            data-testid="login-password"
+            placeholder="Tu contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: "absolute",
+              right: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "#6b7280",
+              display: "flex",
+              alignItems: "center"
+            }}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
       </div>
 
       {error && (
