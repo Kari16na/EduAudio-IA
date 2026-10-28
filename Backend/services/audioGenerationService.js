@@ -4,6 +4,8 @@ const axios = require('axios');
 const gTTS = require('gtts');
 const cloudinary = require('../config/cloudinary');
 
+const MAX_CHARS_AUDIO = 20000;
+
 const baseUrl = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://eduaudio-ia-production.up.railway.app';
 const normalizedBase = String(baseUrl).replace(/\/$/, '');
 
@@ -19,8 +21,20 @@ function normalizePublicAudioUrl(audioUrl) {
   return `${normalizedBase}/${url.replace(/^\/+/, '')}`;
 }
 
+/**
+ * Quita símbolos de Markdown, viñetas y numeraciones que el lector de voz pronunciaría mal.
+ */
+function limpiarParaVoz(t) {
+  return String(t || '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[*_#>`~]/g, '')
+    .replace(/^\s*[-•]\s+/gm, '')
+    .replace(/^\s*\d+[.)]\s+/gm, '')
+    .replace(/\s+\n/g, '\n');
+}
+
 function parsearYLimpiar(resumen) {
-  const texto = String(resumen || '').replace(/```/g, '').trim();
+  const texto = limpiarParaVoz(String(resumen || '')).trim();
 
   if (!texto) {
     return {
@@ -42,18 +56,24 @@ function parsearYLimpiar(resumen) {
     .filter(Boolean);
 
   const textoAudio = parrafos.length > 0
-    ? parrafos.join(' ').slice(0, 8000)
-    : limpio.slice(0, 8000);
+    ? parrafos.join(' ').slice(0, MAX_CHARS_AUDIO)
+    : limpio.slice(0, MAX_CHARS_AUDIO);
 
   return { textoAudio, parrafos };
 }
 
 /**
- * Filtra y prepara texto largo para la IA
+ * Limpia el texto crudo del documento (puntos de índice, espacios, saltos de línea)
+ * y lo limita a un tamaño seguro.
  */
-function prepararTextoLargo(textoCrudo) {
-  const texto = String(textoCrudo || '').trim();
-  return texto;
+function prepararTextoLargo(textoCrudo, maxChars = 60000) {
+  return String(textoCrudo || '')
+    .replace(/\r/g, '')
+    .replace(/\.{4,}\s*\d*/g, ' ') // puntos suspensivos del índice + número de página
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, maxChars);
 }
 
 async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
@@ -65,83 +85,72 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
 
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
-  
-  // Prompt cognitivo universal basado en ciencia del aprendizaje (Feynman y Chunking)
-  const prompt = `Actúa como un Arquitecto de Información Cognitiva y un Profesor Máster en didáctica del aprendizaje acelerado. Tu misión es transformar el siguiente documento (sin importar su temática, ya sea técnica, administrativa, científica o general) en una clase magistral en audio de altísimo valor pedagógico.
 
-Aplica estrictamente principios de ciencia cognitiva:
-1. **Técnica de Feynman:** Traduce la complejidad técnica o teórica a explicaciones lógicas, claras y con sentido causal (explicando el "por qué" y el "para qué", no solo repitiendo definiciones).
-2. **Estructura en Bloques (Chunking):** Organiza la información en una progresión natural de lo general a lo particular, eliminando por completo índices, portadas, metadatos, créditos institucionales y texto repetitivo.
-3. **Anclaje Práctico:** Conecta los conceptos abstractos con su utilidad real o profesional en el mundo laboral.
+  const prompt = `Eres un profesor experto en ciencia del aprendizaje. Convierte el documento en una explicación hablada que haga que el oyente ENTIENDA y RECUERDE el contenido, escuchándolo una sola vez.
 
-Contexto del entorno:
-- Idioma: ${idiomaLabel}
-- Categoría del documento: ${categoria}
+Idioma: ${idiomaLabel}. Categoría: ${categoria}.
 
-Estructura narrativa obligatoria que DEBES seguir rigurosamente en tu respuesta:
-1. **Núcleo y Propósito (El Gancho):** Abre indicando de forma contundente cuál es el problema central, concepto clave o propósito fundamental que aborda el documento y por qué es crucial dominarlo.
-2. **Desarrollo Conceptual y Pilares:** Explica de manera fluida, lógica y cronológica las fases, componentes, metodologías o argumentos centrales del texto. Desglosa los puntos fuertes del documento sin omitir los detalles técnicos o teóricos vitales de la parte media y final.
-3. **Utilidad y Aplicación en el Mundo Real:** Explica cómo se aplican estos conocimientos en la práctica o qué impacto tienen en un entorno profesional o real.
-4. **Cierre de Síntesis y Retención:** Concluye con una síntesis conceptual potente que fije el aprendizaje definitivo en la memoria a largo plazo del oyente.
+Ignora por completo portada, índice, tabla de contenido, números de página, créditos, fechas y texto repetido. Trabaja solo con el contenido real.
 
-Reglas de formato absoluto (Diseñado para Texto a Voz / gTTS):
-- Redacta EXCLUSIVAMENTE en párrafos conversacionales densos, fluidos y de tono profesional.
-- ESTRICTAMENTE PROHIBIDO usar viñetas, guiones, asteriscos, numeraciones (1, 2, 3 textuales dentro del párrafo) ni bloques de código. El texto será leído por un sintetizador de voz, por lo que todo debe fluir como un discurso hablado continuo.
-- No incluyas saludos ni frases robóticas de IA como "Aquí tienes tu resumen". Comienza de inmediato con el contenido educativo.
-- Maximiza la profundidad: exprime el texto provisto para dar una explicación rica, madura y completa.
+Estructura que debes seguir:
+1. Mapa inicial: en pocas frases, di de qué trata el tema, para qué sirve y qué va a aprender el oyente. Anuncia cuántas ideas principales verá.
+2. Desarrollo: explica cada idea principal en orden lógico, de lo general a lo particular. Por cada idea: primero la definición en lenguaje simple, luego el porqué y para qué sirve, luego un ejemplo concreto o una analogía de la vida real, y termina con una frase que resuma la idea.
+3. Conexiones: relaciona cada idea con las anteriores para que el oyente vea el tema como un todo, no como datos sueltos. Señala diferencias entre conceptos que se confunden fácilmente.
+4. Práctica activa: antes del cierre, formula 3 preguntas de comprensión sobre lo más importante. Después de cada pregunta di "piensa tu respuesta" y luego da la respuesta correcta con una breve explicación.
+5. Repaso final: repite las ideas esenciales en pocas frases claras y cierra con una idea memorable que resuma todo.
 
-Texto bruto a procesar:
+Reglas de estilo (será leído por un sintetizador de voz):
+- Un solo narrador, tono claro, cercano y profesional.
+- Frases cortas y fáciles de seguir al oído. Explica cualquier término técnico la primera vez que aparezca.
+- Redacta solo en párrafos hablados. Prohibido usar viñetas, guiones, asteriscos, numeraciones, títulos o símbolos.
+- No uses saludos ni frases como "aquí tienes". Empieza directo con el mapa inicial.
+- No inventes datos que no estén en el documento. Cubre todo el documento, incluyendo la parte media y final.
+
+Documento:
 ${contenido}`;
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-
   if (!apiKey) {
-    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
+    throw new Error('Falta GEMINI_API_KEY en las variables de entorno.');
   }
 
-  try {
-    // URL limpia, segura y libre de caracteres o links rotos
-    const geminiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$){apiKey}`;
+  const geminiUrl =
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
+  try {
     const response = await axios.post(
       geminiUrl,
       {
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 4000,
-        },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 8000 },
       },
       {
-        timeout: 60000,
+        timeout: 120000,
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
         },
       }
     );
 
     const candidateText = response?.data?.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text)
+      ?.map((p) => p.text)
       ?.join('')
       ?.trim();
 
-    if (candidateText) {
-      return candidateText;
+    if (!candidateText) {
+      throw new Error('Gemini no devolvió contenido.');
     }
 
-    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
+    return candidateText;
   } catch (error) {
-    console.error('Error al consumir Gemini:', error?.response?.data || error.message);
-    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
+    console.error('Error Gemini:', error?.response?.data || error.message);
+    throw new Error('No se pudo generar el resumen con IA. Intenta de nuevo.');
   }
 }
 
 async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  const textToSpeak = String(textoAudio || '').slice(0, 8000);
+  const textToSpeak = String(textoAudio || '').slice(0, MAX_CHARS_AUDIO);
 
   if (!textToSpeak.trim()) {
     throw new Error('No hay texto para generar audio.');
@@ -200,6 +209,8 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
 
 module.exports = {
   parsearYLimpiar,
+  prepararTextoLargo,
   resumirConGemini,
   generarArchivoAudioMp3,
+  normalizePublicAudioUrl,
 };
