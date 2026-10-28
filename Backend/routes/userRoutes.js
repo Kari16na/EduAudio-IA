@@ -1,10 +1,18 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const User = require('../models/user');
+const cloudinary = require('../config/cloudinary');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
+
+// Configurar multer en memoria para recibir archivos de imagen del perfil
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+});
 
 router.post('/register', async (req, res) => {
   try {
@@ -139,10 +147,24 @@ router.put('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/photo', authMiddleware, async (req, res) => {
+// Ruta flexible para aceptar archivo (FormData) o JSON con URL/Base64
+router.post('/photo', authMiddleware, upload.single('photo'), async (req, res) => {
   try {
-    // CORRECCIÓN CLAVE: Acepta cualquier propiedad con la que el frontend envíe la foto
-    const photoValue = req.body.photo || req.body.image || req.body.profilePhoto || (typeof req.body === 'string' ? req.body : null);
+    let photoValue = null;
+
+    // Si el frontend envió un archivo mediante FormData
+    if (req.file) {
+      const b64 = Buffer.from(req.file.buffer).toString('base64');
+      let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+      const uploadResponse = await cloudinary.uploader.upload(dataURI, {
+        folder: 'eduaudio_profiles',
+        resource_type: 'image',
+      });
+      photoValue = uploadResponse.secure_url;
+    } else {
+      // Si el frontend envió un JSON con la URL o texto en base64
+      photoValue = req.body?.photo || req.body?.image || req.body?.profilePhoto || (typeof req.body === 'string' ? req.body : null);
+    }
 
     if (!photoValue) {
       return res.status(400).json({ message: 'La foto es obligatoria.' });
@@ -170,7 +192,7 @@ router.post('/photo', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Error actualizando foto de perfil:', error.message);
-    return res.status(500).json({ message: 'Error al actualizar foto.' });
+    return res.status(500).json({ message: `Error al actualizar foto: ${error.message}` });
   }
 });
 
