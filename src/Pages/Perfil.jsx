@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera, Trash2 } from "lucide-react";
+import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera, Trash2, Eye, EyeOff } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import { getAudiosCount, updateUserName, changePassword, uploadProfilePhoto, deleteAccount } from "../services/api";
 import styles from "./Perfil.module.css";
@@ -19,6 +19,11 @@ export default function Perfil({ onNavigate }) {
   const [passwordError, setPasswordError] = useState(null);
   const [passwordMensaje, setPasswordMensaje] = useState(null);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
+
+  // Estados para mostrar u ocultar las contraseñas en Perfil
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const [fotoFile, setFotoFile] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
@@ -249,37 +254,67 @@ export default function Perfil({ onNavigate }) {
             <Lock size={16} /> Cambiar contraseña
           </div>
 
+          {/* Contraseña actual con botón de ojo */}
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Contraseña actual</label>
-            <input
-              className={styles.input}
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Tu contraseña actual"
-            />
+            <div className={styles.passwordContainer}>
+              <input
+                className={styles.inputPassword}
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Tu contraseña actual"
+              />
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              >
+                {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
+          {/* Nueva contraseña con botón de ojo */}
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Nueva contraseña</label>
-            <input
-              className={styles.input}
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Nueva contraseña"
-            />
+            <div className={styles.passwordContainer}>
+              <input
+                className={styles.inputPassword}
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Nueva contraseña"
+              />
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowNewPassword(!showNewPassword)}
+              >
+                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
+          {/* Confirmar contraseña con botón de ojo */}
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Confirmar contraseña</label>
-            <input
-              className={styles.input}
-              type="password"
-              value={confirmNewPassword}
-              onChange={(e) => setConfirmNewPassword(e.target.value)}
-              placeholder="Repite la nueva contraseña"
-            />
+            <div className={styles.passwordContainer}>
+              <input
+                className={styles.inputPassword}
+                type={showConfirmNewPassword ? "text" : "password"}
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                placeholder="Repite la nueva contraseña"
+              />
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+              >
+                {showConfirmNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           {passwordError && (
@@ -328,4 +363,5 @@ export default function Perfil({ onNavigate }) {
       </main>
     </div>
   );
-              }
+    }
+            
