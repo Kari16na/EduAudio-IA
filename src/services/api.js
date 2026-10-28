@@ -4,7 +4,7 @@ const json = { "Content-Type": "application/json" };
 const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
 export function getBackendBaseUrl() {
-  return (import.meta.env.VITE_API_URL || "http://localhost:3000/api")
+  return (import.meta.env.VITE_API_URL || "https://eduaudio-ia-production.up.railway.app/api")
     .replace(/\/$/, "")
     .replace(/\/api$/, "");
 }
