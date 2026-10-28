@@ -56,11 +56,8 @@ function prepararTextoLargo(textoCrudo) {
   const texto = String(textoCrudo || '').trim();
   if (texto.length < 5000) return texto;
 
-  // Si el documento es muy largo, buscamos si hay secciones de índice al inicio
-  // y priorizamos el cuerpo del texto para no saturar la ventana de análisis con índices.
   const lineas = texto.split('\n');
   if (lineas.length > 100) {
-    // Tomamos todo el texto pero aseguramos que la IA reciba la señal de procesar de inicio a fin
     return texto;
   }
   return texto;
@@ -76,7 +73,6 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
   
-  // Prompt pedagógico optimizado para formato podcast de estudio profundo (Estilo Thea)
   const prompt = `Eres un profesor experto y creador de podcasts educativos de alto nivel académico. Tu objetivo es analizar exhaustivamente el documento proporcionado (incluso si es extenso o un libro completo) desde la primera página hasta el final, extrayendo el contenido de valor real, los argumentos centrales y el desarrollo de los capítulos, evitando quedarte atascado en índices o portadas.
 
 Contexto:
@@ -105,8 +101,11 @@ ${contenido}`;
   }
 
   try {
+    // URL limpia y corregida para evitar el error de Invalid URL
+    const geminiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$){apiKey}`;
+
     const response = await axios.post(
-      `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$){apiKey}`,
+      geminiUrl,
       {
         contents: [
           {
@@ -115,11 +114,11 @@ ${contenido}`;
         ],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 4000, // Ampliado para permitir explicaciones profundas y extensas de libros largos
+          maxOutputTokens: 4000,
         },
       },
       {
-        timeout: 60000, // Timeout extendido a 60s para documentos densos
+        timeout: 60000,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -143,7 +142,6 @@ ${contenido}`;
 }
 
 async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  // Ampliado el límite de caracteres para soportar resúmenes mucho más ricos y profundos
   const textToSpeak = String(textoAudio || '').slice(0, 8000);
 
   if (!textToSpeak.trim()) {
