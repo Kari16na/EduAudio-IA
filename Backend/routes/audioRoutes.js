@@ -55,21 +55,31 @@ router.put('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// DELETE /api/audios/:id - elimina de Cloudinary y de MongoDB
+// DELETE /api/audios/:id - elimina de Cloudinary y de MongoDB de forma definitiva
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const audio = await Audio.findOne({ _id: req.params.id, userId: req.userId });
     if (!audio) return res.status(404).json({ message: 'Audio no encontrado.' });
 
-    const publicId = audio.audioUrl.split('/').pop().split('.')[0];
-    try {
-      await cloudinary.uploader.destroy(`eduaudio_audios/${publicId}`, { resource_type: 'video' });
-    } catch (e) {
-      // Si Cloudinary falla igual borramos el registro, para no dejarlo "atascado"
-      console.error('Error borrando en Cloudinary:', e.message);
+    // Extraer el public_id correcto considerando la carpeta "eduaudio_audios"
+    if (audio.audioUrl && audio.audioUrl.includes('cloudinary.com')) {
+      try {
+        const partes = audio.audioUrl.split('/');
+        const archivoConExtension = partes.pop(); // ej: nombre.mp3
+        const nombreArchivo = archivoConExtension.split('.')[0];
+        const carpeta = partes.pop(); // ej: eduaudio_audios
+        
+        const publicId = carpeta === 'eduaudio_audios' ? `${carpeta}/${nombreArchivo}` : nombreArchivo;
+
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+      } catch (e) {
+        console.error('Error borrando en Cloudinary:', e.message);
+      }
     }
 
-    await Audio.findByIdAndDelete(audio._id);
+    // Borrado definitivo del documento en MongoDB para evitar audios "fantasma"
+    await Audio.deleteOne({ _id: audio._id, userId: req.userId });
+    
     res.json({ message: 'Audio eliminado correctamente.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
