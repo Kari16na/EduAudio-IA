@@ -86,7 +86,7 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   // PROMPT DEFINITIVO BASADO EN APRENDIZAJE AUDITIVO (5 PASOS DE CIENCIA COGNITIVA)
   const prompt = `Actúa como un neuroeducador experto y un locutor de podcasts académicos de élite. Tu tarea es procesar el documento adjunto y transformarlo en una clase en audio basada en métodos de estudio científicamente probados para el aprendizaje auditivo (ya que el estudiante va escuchando y no puede releer).
 
-Es obligatorio que te enfocares estrictamente en el contenido real del documento (nada de inventar información externa), organizándolo paso a paso bajo estos 5 métodos de estudio cognitivo:
+Es obligatorio que te enfoques estrictamente en el contenido real del documento (nada de inventar información externa), organizándolo paso a paso bajo estos 5 métodos de estudio cognitivo:
 
 1. **Organizador Previo:** Inicia la explicación ubicando al oyente en el mapa general del tema que el texto expone, indicando de qué trata y cuáles son los puntos capitales que vamos a dominar.
 2. **Explicación Causal:** Desarrolla los conceptos técnicos del texto enfocándote en el "por qué" y el "para qué" de las cosas, desglosando la lógica detrás de la teoría en lugar de dar definiciones frías.
@@ -114,7 +114,8 @@ ${contenido}`;
   }
 
   try {
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    // Actualizado al modelo gemini-3.5-flash (gratuito, rápido y de última generación)
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent';
     const requestUrl = `${endpoint}?key=${apiKey}`;
 
     const response = await axios.post(
@@ -126,7 +127,7 @@ ${contenido}`;
           },
         ],
         generationConfig: {
-          temperature: 0.2, // Temperatura baja para mantener fidelidad al documento
+          temperature: 0.2, // Temperatura baja para mantener fidelidad estricta al documento
           maxOutputTokens: 3000,
         },
       },
@@ -161,7 +162,7 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
     throw new Error('No hay texto para generar audio.');
   }
 
-  if (!process.env.CLOUD_NAME || !process.env.API_KEY || !process.env.API_SECRET) {
+  if (!process.env.CLOUD_NAME || !process.env.API_KEY || !process.env.CLOUD_SECRET && !process.env.API_SECRET) {
     throw new Error('Faltan variables de Cloudinary: CLOUD_NAME, API_KEY o API_SECRET.');
   }
 
