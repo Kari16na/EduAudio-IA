@@ -4,6 +4,8 @@ const axios = require('axios');
 const gTTS = require('gtts');
 const cloudinary = require('../config/cloudinary');
 
+const MAX_CHARS_AUDIO = 20000;
+
 const baseUrl = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://eduaudio-ia-production.up.railway.app';
 const normalizedBase = String(baseUrl).replace(/\/$/, '');
 
@@ -20,57 +22,93 @@ function normalizePublicAudioUrl(audioUrl) {
 }
 
 /**
- * Limpia y prepara el texto para el almacenamiento y la síntesis de voz
+ * Quita símbolos de Markdown, viñetas y numeraciones que el lector de voz pronunciaría mal.
+ * No toca los guiones dentro de palabras (ej. "back-end").
+ */
+function limpiarParaVoz(t) {
+  return String(t || '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[*_#>`~]/g, '')
+    .replace(/^\s*[-•]\s+/gm, '')
+    .replace(/^\s*\d+[.)]\s+/gm, '')
+    .replace(/\s+\n/g, '\n');
+}
+
+/**
+ * Limpia y prepara la salida de la IA para guardarla y convertirla en voz
  */
 function parsearYLimpiar(resumen) {
-  const texto = String(resumen || '').replace(/```json/g, '').replace(/```/g, '').trim();
+  const texto = limpiarParaVoz(String(resumen || '').replace(/\r/g, '')).trim();
 
   if (!texto) {
-    return {
-      textoAudio: '',
-      parrafos: [],
-    };
+    return { textoAudio: '', parrafos: [] };
   }
 
-  const parrafos = texto
+  const limpio = texto
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+
+  const parrafos = limpio
     .split(/\n\s*\n/)
-    .map((p) => p.trim())
+    .map((p) => p.replace(/\s+/g, ' ').trim())
     .filter(Boolean);
 
-  // Texto adaptado para el reproductor de audio (sin símbolos que entorpezcan gTTS)
-  const textoAudio = texto
-    .replace(/[#*_-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .slice(0, 8000);
+  const textoAudio = parrafos.join(' ').slice(0, MAX_CHARS_AUDIO);
 
   return { textoAudio, parrafos };
 }
 
 /**
- * Filtro inteligente para eliminar encabezados, tablas de contenido y portadas del SENA
+ * Detecta una tabla de contenido (varias líneas con puntos seguidos de número de página)
+ * y devuelve el texto que viene después de ella.
  */
-function prepararTextoLargo(textoCrudo) {
-  let texto = String(textoCrudo || '').trim();
-  if (texto.length < 1000) return texto;
+function quitarTablaContenido(texto) {
+  const ventana = texto.slice(0, 25000);
+  const re = /\.{4,}\s*\d*/g;
+  let m;
+  let prevEnd = -1;
+  let lastEnd = -1;
+  let count = 0;
 
-  // Limpieza de basura institucional repetitiva
-  texto = texto
-    .replace(/Grupo de Ejecución de la Formación Virtual/gi, '')
-    .replace(/SENA/gi, '')
-    .replace(/Regional\s+[A-Za-z]+/gi, '')
-    .replace(/^\s*\d+\s*$/gm, ''); // Números de página sueltos
-
-  // Localiza el fin de la tabla de contenido para procesar directo el tema
-  const lower = texto.toLowerCase();
-  const indiceIndex = lower.indexOf('tabla de contenido');
-  if (indiceIndex !== -1) {
-    const corteReal = texto.search(/(introducci[oó]n|1\.\s+realizaci[oó]n|m[oó]dulo\s+1)/i);
-    if (corteReal > indiceIndex) {
-      texto = texto.slice(corteReal);
-    }
+  while ((m = re.exec(ventana)) !== null) {
+    // Si la separación con el punteado anterior es grande, el índice ya terminó
+    if (prevEnd !== -1 && m.index - prevEnd > 800) break;
+    prevEnd = m.index + m[0].length;
+    lastEnd = prevEnd;
+    count += 1;
   }
 
-  return texto.slice(0, 30000);
+  if (count >= 5 && lastEnd > 0) {
+    return texto.slice(lastEnd);
+  }
+  return texto;
+}
+
+/**
+ * Filtro para eliminar portada, tabla de contenido, encabezados institucionales y basura del PDF
+ */
+function prepararTextoLargo(textoCrudo, maxChars = 60000) {
+  let texto = String(textoCrudo || '').replace(/\r/g, '').trim();
+  if (!texto) return '';
+
+  // 1. Quita portada + tabla de contenido
+  texto = quitarTablaContenido(texto);
+
+  // 2. Basura institucional repetitiva
+  texto = texto
+    .replace(/Grupo de Ejecución de la Formación Virtual/gi, '')
+    .replace(/\bSENA\b/g, '')
+    .replace(/^\s*\d+\s*$/gm, ''); // números de página sueltos
+
+  // 3. Puntos de índice sobrantes y espacios
+  texto = texto
+    .replace(/\.{4,}\s*\d*/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return texto.slice(0, maxChars);
 }
 
 async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
@@ -82,87 +120,82 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
 
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
-  
-  // PROMPT DEFINITIVO BASADO EN APRENDIZAJE AUDITIVO (5 PASOS DE CIENCIA COGNITIVA)
-  const prompt = `Actúa como un neuroeducador experto y un locutor de podcasts académicos de élite. Tu tarea es procesar el documento adjunto y transformarlo en una clase en audio basada en métodos de estudio científicamente probados para el aprendizaje auditivo (ya que el estudiante va escuchando y no puede releer).
 
-Es obligatorio que te enfoques estrictamente en el contenido real del documento (nada de inventar información externa), organizándolo paso a paso bajo estos 5 métodos de estudio cognitivo:
+  const prompt = `Eres un profesor experto en ciencia del aprendizaje. Convierte el documento en una explicación hablada que haga que el oyente ENTIENDA y RECUERDE el contenido, escuchándolo una sola vez.
 
-1. **Organizador Previo:** Inicia la explicación ubicando al oyente en el mapa general del tema que el texto expone, indicando de qué trata y cuáles son los puntos capitales que vamos a dominar.
-2. **Explicación Causal:** Desarrolla los conceptos técnicos del texto enfocándote en el "por qué" y el "para qué" de las cosas, desglosando la lógica detrás de la teoría en lugar de dar definiciones frías.
-3. **Ejemplos Concretos:** Extrae o traduce los ejemplos prácticos que trae el documento (o aplica un caso de la vida real basado en el texto) para ilustrar la teoría.
-4. **Recuperación Activa:** Introduce reflexiones o micro-preguntas dentro de la explicación para que la mente del estudiante active el recuerdo de lo que se acaba de explicar.
-5. **Repetición Inteligente de Cierre:** Antes de terminar, haz un repaso sintetizado retomando las ideas centrales del documento para fijarlas definitivamente en la memoria.
+Idioma: ${idiomaLabel}. Categoría: ${categoria}.
 
-Contexto:
-- Idioma: ${idiomaLabel}
-- Categoría: ${categoria}
+Ignora por completo portada, índice, tabla de contenido, números de página, créditos, fechas y texto repetido. Trabaja solo con el contenido real del documento y no inventes información externa.
 
-Reglas estrictas de formato para la voz (gTTS):
-- Redacta de forma fluida y conversacional, explicando el contenido del PDF como si le enseñaras a un colega.
-- ESTRICTAMENTE PROHIBIDO usar viñetas, guiones, asteriscos, tablas o símbolos que arruinen la lectura de la voz artificial.
-- Cíñete fielmente al documento original que se te entrega a continuación.
+Estructura que debes seguir:
+1. Mapa inicial: en pocas frases, di de qué trata el tema, para qué sirve y qué va a aprender el oyente. Anuncia cuántas ideas principales verá.
+2. Desarrollo: explica cada idea principal en orden lógico, de lo general a lo particular. Por cada idea: primero la definición en lenguaje simple, luego el porqué y para qué sirve, luego un ejemplo concreto o una analogía de la vida real basada en el texto, y termina con una frase que resuma la idea.
+3. Conexiones: relaciona cada idea con las anteriores para que el oyente vea el tema como un todo, no como datos sueltos. Señala diferencias entre conceptos que se confunden fácilmente.
+4. Práctica activa: antes del cierre, formula 3 preguntas de comprensión sobre lo más importante. Después de cada pregunta di "piensa tu respuesta" y luego da la respuesta correcta con una breve explicación.
+5. Repaso final: repite las ideas esenciales en pocas frases claras y cierra con una idea memorable que resuma todo.
 
-Texto del documento a procesar:
+Reglas de estilo (será leído por un sintetizador de voz):
+- Un solo narrador, tono claro, cercano y profesional.
+- Frases cortas y fáciles de seguir al oído. Explica cualquier término técnico la primera vez que aparezca.
+- Redacta solo en párrafos hablados. Prohibido usar viñetas, guiones, asteriscos, numeraciones, títulos, tablas o símbolos.
+- No uses saludos ni frases como "aquí tienes". Empieza directo con el mapa inicial.
+- Cubre todo el documento, incluyendo la parte media y final, sin omitir conceptos importantes.
+
+Documento:
 ${contenido}`;
 
   let apiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
   apiKey = apiKey.replace(/^["']|["']$/g, '');
 
   if (!apiKey) {
-    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
+    throw new Error('Falta GEMINI_API_KEY en las variables de entorno.');
   }
 
-  try {
-    // Actualizado al modelo gemini-3.5-flash (gratuito, rápido y de última generación)
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent';
-    const requestUrl = `${endpoint}?key=${apiKey}`;
+  const modelo = (process.env.GEMINI_MODEL || 'gemini-3.7-flash').trim();
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
 
+  try {
     const response = await axios.post(
-      requestUrl,
+      endpoint,
       {
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.2, // Temperatura baja para mantener fidelidad estricta al documento
-          maxOutputTokens: 3000,
+          maxOutputTokens: 16000, // margen amplio: el razonamiento interno también cuenta
         },
       },
       {
-        timeout: 60000,
+        timeout: 120000,
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
         },
       }
     );
 
     const candidateText = response?.data?.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text)
+      ?.map((p) => p.text)
       ?.join('')
       ?.trim();
 
-    if (candidateText) {
-      return candidateText;
+    if (!candidateText) {
+      throw new Error('Gemini no devolvió contenido.');
     }
 
-    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
+    return candidateText;
   } catch (error) {
-    console.error('Error al consumir Gemini:', error?.response?.data || error.message);
-    return parsearYLimpiar(contenidoOriginal).textoAudio || contenidoOriginal.slice(0, 4000);
+    console.error('Error Gemini:', error?.response?.data || error.message);
+    throw new Error('No se pudo generar el resumen con IA. Intenta de nuevo.');
   }
 }
 
 async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileName }) {
-  const textToSpeak = String(textoAudio || '').slice(0, 8000);
+  const textToSpeak = String(textoAudio || '').slice(0, MAX_CHARS_AUDIO);
 
   if (!textToSpeak.trim()) {
     throw new Error('No hay texto para generar audio.');
   }
 
-  if (!process.env.CLOUD_NAME || !process.env.API_KEY || !process.env.CLOUD_SECRET && !process.env.API_SECRET) {
+  if (!process.env.CLOUD_NAME || !process.env.API_KEY || !(process.env.API_SECRET || process.env.CLOUD_SECRET)) {
     throw new Error('Faltan variables de Cloudinary: CLOUD_NAME, API_KEY o API_SECRET.');
   }
 
@@ -215,6 +248,8 @@ async function generarArchivoAudioMp3({ textoAudio, idioma = 'es', userId, fileN
 
 module.exports = {
   parsearYLimpiar,
+  prepararTextoLargo,
   resumirConGemini,
   generarArchivoAudioMp3,
+  normalizePublicAudioUrl,
 };
