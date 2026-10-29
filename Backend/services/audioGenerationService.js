@@ -111,7 +111,7 @@ function prepararTextoLargo(textoCrudo, maxChars = 60000) {
   return texto.slice(0, maxChars);
 }
 
-async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
+async function resumirConGemini(texto, idioma = 'es', categoria = 'general', estilo = 'comprension') {
   const contenidoOriginal = String(texto || '').trim();
 
   if (!contenidoOriginal) {
@@ -121,25 +121,45 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
 
-  const prompt = `Eres un profesor experto en ciencia del aprendizaje. Convierte el documento en una explicación hablada que haga que el oyente ENTIENDA y RECUERDE el contenido, escuchándolo una sola vez.
+  const reglasComunes = `Eres un profesor experto en ciencia del aprendizaje. Convierte el documento en una explicación hablada que haga que el oyente ENTIENDA a fondo el contenido y lo RECUERDE, escuchándolo una sola vez.
 
 Idioma: ${idiomaLabel}. Categoría: ${categoria}.
 
-Ignora por completo portada, índice, tabla de contenido, números de página, créditos, fechas y texto repetido. Trabaja solo con el contenido real del documento y no inventes información externa.
+Ignora por completo portada, índice, tabla de contenido, números de página, créditos, fechas y texto repetido. Trabaja solo con el contenido real del documento y no inventes información externa.`;
 
-Estructura que debes seguir:
-1. Mapa inicial: en pocas frases, di de qué trata el tema, para qué sirve y qué va a aprender el oyente. Anuncia cuántas ideas principales verá.
-2. Desarrollo: explica cada idea principal en orden lógico, de lo general a lo particular. Por cada idea: primero la definición en lenguaje simple, luego el porqué y para qué sirve, luego un ejemplo concreto o una analogía de la vida real basada en el texto, y termina con una frase que resuma la idea.
-3. Conexiones: relaciona cada idea con las anteriores para que el oyente vea el tema como un todo, no como datos sueltos. Señala diferencias entre conceptos que se confunden fácilmente.
-4. Práctica activa: antes del cierre, formula 3 preguntas de comprensión sobre lo más importante. Después de cada pregunta di "piensa tu respuesta" y luego da la respuesta correcta con una breve explicación.
-5. Repaso final: repite las ideas esenciales en pocas frases claras y cierra con una idea memorable que resuma todo.
+  const estructuraComprension = `Estructura que debes seguir:
+1. Gancho: abre con UNA de estas opciones, la que mejor encaje con el tema: una pregunta intrigante, una situación cotidiana con la que el oyente se identifique, un problema real que el tema ayuda a resolver, o un dato llamativo del documento. Nunca empieces con frases como "Este tema trata", "En este audio", "Hoy vamos a" ni "Bienvenido".
+2. Mapa: justo después del gancho, en dos o tres frases, di para qué sirve el tema y anuncia las ideas principales que el oyente va a aprender (entre 3 y 6, según la extensión del documento).
+3. Desarrollo profundo: explica cada idea principal en orden lógico, de lo general a lo particular. Por cada idea: la definición en lenguaje simple, el porqué y para qué sirve, cómo se relaciona con la idea anterior, un ejemplo concreto o una analogía cotidiana basada en el texto, y una frase que empiece con "en otras palabras" para resumirla de forma distinta. Si el documento trae pasos, cifras, fórmulas o criterios importantes, explícalos con calma, uno por uno, y di qué significan en la práctica.
+4. Conexiones: relaciona las ideas entre sí para que el oyente vea el tema como un todo. Aclara las diferencias entre conceptos que se confunden fácilmente y los errores comunes.
+5. Cierre: resume las ideas esenciales en pocas frases y termina con una idea memorable. No hagas preguntas al oyente, salvo la del gancho.
 
-Reglas de estilo (será leído por un sintetizador de voz):
+Repetición: retoma la idea más importante del documento dos veces más, una a mitad de la explicación y otra en el cierre, usando palabras distintas cada vez.`;
+
+  const estructuraEstudio = `Estructura que debes seguir:
+1. Gancho: abre con UNA de estas opciones, la que mejor encaje con el tema: una pregunta intrigante, una situación cotidiana con la que el oyente se identifique, un problema real que el tema ayuda a resolver, o un dato llamativo del documento. Nunca empieces con frases como "Este tema trata", "En este audio", "Hoy vamos a" ni "Bienvenido".
+2. Mapa: justo después del gancho, en dos o tres frases, di para qué sirve el tema y anuncia las ideas principales que el oyente va a aprender (entre 3 y 6, según la extensión del documento).
+3. Desarrollo: explica cada idea principal en orden lógico, de lo general a lo particular. Por cada idea: la definición en lenguaje simple, el porqué y para qué sirve, un ejemplo concreto o una analogía cotidiana basada en el texto, y una frase que la resuma. Al terminar cada idea, haz UNA pregunta breve de comprensión, di "piensa tu respuesta" y da la respuesta en una o dos frases.
+4. Conexiones: relaciona las ideas entre sí para que el oyente vea el tema como un todo. Aclara las diferencias entre conceptos que se confunden fácilmente.
+5. Repaso activo: formula 2 preguntas finales que combinen varias ideas, cada una con "piensa tu respuesta" y su respuesta correcta.
+6. Cierre: resume las ideas esenciales en pocas frases y termina con una idea memorable.
+
+Repetición: retoma la idea más importante del documento dos veces más, una a mitad de la explicación y otra en el cierre, usando palabras distintas cada vez.`;
+
+  const reglasEstilo = `Reglas de estilo (será leído por un sintetizador de voz):
 - Un solo narrador, tono claro, cercano y profesional.
-- Frases cortas y fáciles de seguir al oído. Explica cualquier término técnico la primera vez que aparezca.
+- Frases cortas, de máximo 20 palabras. Explica cada término técnico la primera vez que aparezca.
 - Redacta solo en párrafos hablados. Prohibido usar viñetas, guiones, asteriscos, numeraciones, títulos, tablas o símbolos.
-- No uses saludos ni frases como "aquí tienes". Empieza directo con el mapa inicial.
-- Cubre todo el documento, incluyendo la parte media y final, sin omitir conceptos importantes.
+- Sin saludos ni frases como "aquí tienes".
+- Cubre todo el documento, incluyendo la parte media y final, sin omitir conceptos importantes.`;
+
+  const estructura = estilo === 'estudio' ? estructuraEstudio : estructuraComprension;
+
+  const prompt = `${reglasComunes}
+
+${estructura}
+
+${reglasEstilo}
 
 Documento:
 ${contenido}`;
