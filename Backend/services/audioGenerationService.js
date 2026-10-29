@@ -20,7 +20,7 @@ function normalizePublicAudioUrl(audioUrl) {
 }
 
 /**
- * Limpia y formatea la respuesta para que el frontend la lea perfectamente en Markdown
+ * Limpia y prepara el texto para el almacenamiento y la síntesis de voz
  */
 function parsearYLimpiar(resumen) {
   const texto = String(resumen || '').replace(/```json/g, '').replace(/```/g, '').trim();
@@ -37,7 +37,7 @@ function parsearYLimpiar(resumen) {
     .map((p) => p.trim())
     .filter(Boolean);
 
-  // Texto adaptado para el reproductor de audio (sin símbolos Markdown pesados)
+  // Texto adaptado para el reproductor de audio (sin símbolos que entorpezcan gTTS)
   const textoAudio = texto
     .replace(/[#*_-]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -47,21 +47,30 @@ function parsearYLimpiar(resumen) {
 }
 
 /**
- * Filtro inteligente para saltar tablas de contenido e índices iniciales del SENA
+ * Filtro inteligente para eliminar encabezados, tablas de contenido y portadas del SENA
  */
 function prepararTextoLargo(textoCrudo) {
   let texto = String(textoCrudo || '').trim();
-  if (texto.length < 2000) return texto;
+  if (texto.length < 1000) return texto;
 
-  const inicioLower = texto.slice(0, 3000).toLowerCase();
-  if (inicioLower.includes('tabla de contenido') || inicioLower.includes('índice general') || inicioLower.includes('control del documento')) {
-    const matchTema = texto.search(/(introducci[oó]n|unidad\s+1|m[oó]dulo\s+1|cap[ií]tulo\s+1|\n1\.\s+[A-Z])/i);
-    if (matchTema > 0 && matchTema < 8000) {
-      texto = texto.slice(matchTema);
+  // Limpieza de basura institucional repetitiva
+  texto = texto
+    .replace(/Grupo de Ejecución de la Formación Virtual/gi, '')
+    .replace(/SENA/gi, '')
+    .replace(/Regional\s+[A-Za-z]+/gi, '')
+    .replace(/^\s*\d+\s*$/gm, ''); // Números de página sueltos
+
+  // Localiza el fin de la tabla de contenido para procesar directo el tema
+  const lower = texto.toLowerCase();
+  const indiceIndex = lower.indexOf('tabla de contenido');
+  if (indiceIndex !== -1) {
+    const corteReal = texto.search(/(introducci[oó]n|1\.\s+realizaci[oó]n|m[oó]dulo\s+1)/i);
+    if (corteReal > indiceIndex) {
+      texto = texto.slice(corteReal);
     }
   }
 
-  return texto.slice(0, 45000);
+  return texto.slice(0, 30000);
 }
 
 async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
@@ -74,23 +83,27 @@ async function resumirConGemini(texto, idioma = 'es', categoria = 'general') {
   const contenido = prepararTextoLargo(contenidoOriginal);
   const idiomaLabel = idioma === 'en' ? 'English' : 'Español';
   
-  // PROMPT MAESTRO DE NIVEL THEA (Estructura de Guía de Estudio Profesional)
-  const prompt = `Actúa como un Diseñador Instruccional Senior y Experto en Curaduría de Contenidos Académicos. Tu misión es transformar el documento proporcionado en una **Guía de Estudio Profesional y Estructurada** (idéntica al estándar de calidad de plataformas avanzadas como Thea o NotebookLM).
+  // PROMPT DEFINITIVO BASADO EN APRENDIZAJE AUDITIVO (5 PASOS DE CIENCIA COGNITIVA)
+  const prompt = `Actúa como un neuroeducador experto y un locutor de podcasts académicos de élite. Tu tarea es procesar el documento adjunto y transformarlo en una clase en audio basada en métodos de estudio científicamente probados para el aprendizaje auditivo (ya que el estudiante va escuchando y no puede releer).
+
+Es obligatorio que te enfocares estrictamente en el contenido real del documento (nada de inventar información externa), organizándolo paso a paso bajo estos 5 métodos de estudio cognitivo:
+
+1. **Organizador Previo:** Inicia la explicación ubicando al oyente en el mapa general del tema que el texto expone, indicando de qué trata y cuáles son los puntos capitales que vamos a dominar.
+2. **Explicación Causal:** Desarrolla los conceptos técnicos del texto enfocándote en el "por qué" y el "para qué" de las cosas, desglosando la lógica detrás de la teoría en lugar de dar definiciones frías.
+3. **Ejemplos Concretos:** Extrae o traduce los ejemplos prácticos que trae el documento (o aplica un caso de la vida real basado en el texto) para ilustrar la teoría.
+4. **Recuperación Activa:** Introduce reflexiones o micro-preguntas dentro de la explicación para que la mente del estudiante active el recuerdo de lo que se acaba de explicar.
+5. **Repetición Inteligente de Cierre:** Antes de terminar, haz un repaso sintetizado retomando las ideas centrales del documento para fijarlas definitivamente en la memoria.
 
 Contexto:
 - Idioma: ${idiomaLabel}
 - Categoría: ${categoria}
 
-Reglas estrictas de formato y contenido que DEBES seguir rigurosamente:
-1. **Estructura en Markdown Limpio:** Utiliza "#" para el título principal, "##" para las secciones clave y "###" para subtemas o conceptos específicos.
-2. **Eliminación Absoluta de Ruido:** Ignora por completo índices, portadas, números de página, créditos institucionales y textos repetitivos del inicio. Ve directo al contenido académico.
-3. **Estructura Académica Obligatoria:**
-   - **Introducción:** Explica de forma concisa de qué trata el documento y por qué es fundamental dominarlo.
-   - **Desarrollo Temático por Secciones:** Organiza los conceptos clave en bloques lógicos y cronológicos. Utiliza viñetas cortas ("*") únicamente para listar características, elementos o definiciones importantes para mantener una lectura visualmente impecable.
-   - **Conceptos Clave Explicados:** Desglosa los términos técnicos complejos de forma clara y con sentido práctico (explicando el qué y el porqué).
-   - **Síntesis y Conclusiones:** Un cierre potente que consolide el aprendizaje definitivo.
+Reglas estrictas de formato para la voz (gTTS):
+- Redacta de forma fluida y conversacional, explicando el contenido del PDF como si le enseñaras a un colega.
+- ESTRICTAMENTE PROHIBIDO usar viñetas, guiones, asteriscos, tablas o símbolos que arruinen la lectura de la voz artificial.
+- Cíñete fielmente al documento original que se te entrega a continuación.
 
-Texto bruto a procesar:
+Texto del documento a procesar:
 ${contenido}`;
 
   let apiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
@@ -113,8 +126,8 @@ ${contenido}`;
           },
         ],
         generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 4000,
+          temperature: 0.2, // Temperatura baja para mantener fidelidad al documento
+          maxOutputTokens: 3000,
         },
       },
       {
