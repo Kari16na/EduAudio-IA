@@ -151,7 +151,7 @@ ${contenido}`;
     throw new Error('Falta GEMINI_API_KEY en las variables de entorno.');
   }
 
-  const modelo = (process.env.GEMINI_MODEL || 'gemini-3.7-flash').trim();
+  const modelo = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
 
   try {
@@ -183,8 +183,10 @@ ${contenido}`;
 
     return candidateText;
   } catch (error) {
-    console.error('Error Gemini:', error?.response?.data || error.message);
-    throw new Error('No se pudo generar el resumen con IA. Intenta de nuevo.');
+    const status = error?.response?.status || 'sin respuesta';
+    const detalle = error?.response?.data?.error?.message || error.message;
+    console.error('Error Gemini:', status, detalle);
+    throw new Error(`No se pudo generar el resumen con IA (${status}): ${detalle}`);
   }
 }
 
