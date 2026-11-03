@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera, Trash2, Eye, EyeOff } from "lucide-react";
-import NavBar from "../Components/NavBar";
+import NavBar from "../components/NavBar";
 import { getAudiosCount, updateUserName, changePassword, uploadProfilePhoto, deleteAccount } from "../services/api";
 import styles from "./Perfil.module.css";
 

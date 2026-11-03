@@ -1,5 +1,5 @@
 import { Headphones, FileText, FileEdit } from "lucide-react";
-import NavBar from "../Components/NavBar";
+import NavBar from "../components/NavBar";
 import styles from "./Landing.module.css";
 
 export default function Landing({ onNavigate }) {

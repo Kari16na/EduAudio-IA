@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bot, User, UploadCloud, FileText, File, Music, Headphones, Languages } from "lucide-react";
-import NavBar from "../Components/NavBar";
+import NavBar from "../components/NavBar";
 import { getAudios, generateAudio } from "../services/api";
 import styles from "./Dashboard.module.css";
 

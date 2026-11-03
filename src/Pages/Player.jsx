@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Headphones, ArrowLeft, SkipBack, SkipForward, Play, Pause } from "lucide-react";
-import NavBar from "../Components/NavBar";
+import NavBar from "../components/NavBar";
 import { normalizeAudioUrl } from "../services/api";
 import styles from "./Player.module.css";
 
