@@ -77,7 +77,7 @@ export default function ForgotPassword({ onNavigate }) {
         <input
           className={styles.input}
           type="email"
-          placeholder="ejemplo@correo.com"
+          placeholder="ejemplo@gmail.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
