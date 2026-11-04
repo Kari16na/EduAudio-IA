@@ -21,8 +21,8 @@ export default function SignUp({ onNavigate }) {
       setError("Por favor completa todos los campos.");
       return;
     }
-    if (!email.includes("@")) {
-      setError("Ingresa un correo electrónico válido (debe contener @).");
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError("Ingresa un correo electrónico válido (ejemplo: nombre@correo.com).");
       return;
     }
     if (password.length < 8) {

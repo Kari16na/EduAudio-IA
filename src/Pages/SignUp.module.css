@@ -204,12 +204,13 @@
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
   font-family: var(--font-main);
-  transition: transform 0.2s;
+  transition: transform 0.2s, filter 0.2s;
   margin-bottom: 8px;
 }
 
 .btnPrimary:hover {
   transform: translateY(-1px);
+  filter: brightness(0.9);
 }
 
 .loginLink {
