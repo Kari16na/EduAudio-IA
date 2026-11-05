@@ -66,12 +66,10 @@
   margin-bottom: 40px;
 }
 
-/* Botón principal naranja.
-   Al pasar el mouse (:hover) se oscurece con filter: brightness().
-   Un valor menor a 1 oscurece, mayor a 1 aclara. Puedes copiar este
-   mismo patrón (transition + :hover + filter: brightness(0.85)) en
-   cualquier otro botón de la app para lograr el mismo efecto. */
+/* Botón principal con el estilo del botón de inicio de sesión */
 .ctaBtn {
+  width: 100%;
+  max-width: 360px;
   background: linear-gradient(
     135deg,
     var(--color-accent),
@@ -79,26 +77,24 @@
   );
   color: var(--color-white);
   border: none;
-  border-radius: var(--radius-full);
-  padding: 16px 56px;
-  font-size: 18px;
+  border-radius: var(--radius-md);
+  padding: 14px 32px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
   font-family: var(--font-main);
-  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  transition: transform 0.2s;
   margin-bottom: 24px;
 }
 
 .ctaBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(245, 166, 35, 0.5);
-  filter: brightness(0.85);
+  transform: translateY(-1px);
 }
 
-.ctaBtn:active {
-  filter: brightness(0.7);
-  transform: translateY(0);
+.ctaBtn:focus-visible {
+  outline: 3px solid rgba(242, 155, 36, 0.4);
+  outline-offset: 3px;
 }
 
 /* Badges PDF / Word */

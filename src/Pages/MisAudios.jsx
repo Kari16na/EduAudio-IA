@@ -4,6 +4,8 @@ import NavBar from "../Components/NavBar";
 import { getAudios, deleteAudio, updateAudioName, normalizeAudioUrl } from "../services/api";
 import styles from "./MisAudios.module.css";
 
+const MAX_AUDIO_NAME_LENGTH = 50;
+
 function esCloudinary(url) {
   return /res\.cloudinary\.com/i.test(url || "");
 }
@@ -79,7 +81,7 @@ export default function MisAudios({ onNavigate }) {
 
   function handleAbrirEditar(audio) {
     setAudioEditar(audio);
-    setNuevoNombre(audio.fileName || "");
+    setNuevoNombre((audio.fileName || "").slice(0, MAX_AUDIO_NAME_LENGTH));
     setModalAbierto(true);
   }
 
@@ -90,15 +92,20 @@ export default function MisAudios({ onNavigate }) {
   }
 
   async function handleGuardarNombre() {
-    if (!nuevoNombre.trim()) {
+    const nombre = nuevoNombre.trim();
+    if (!nombre) {
       alert("El nombre no puede estar vacío.");
+      return;
+    }
+    if (nombre.length > MAX_AUDIO_NAME_LENGTH) {
+      alert(`El nombre no puede superar ${MAX_AUDIO_NAME_LENGTH} caracteres.`);
       return;
     }
 
     try {
       setGuardando(true);
       const token = localStorage.getItem("token");
-      const data = await updateAudioName(token, audioEditar._id, nuevoNombre.trim());
+      const data = await updateAudioName(token, audioEditar._id, nombre);
 
       if (!data || data.error) {
         alert(data?.message || "Error al actualizar.");
@@ -106,7 +113,7 @@ export default function MisAudios({ onNavigate }) {
       }
 
       setAudios((prev) => prev.map((audio) =>
-        audio._id === audioEditar._id ? { ...audio, fileName: nuevoNombre.trim() } : audio
+        audio._id === audioEditar._id ? { ...audio, fileName: nombre } : audio
       ));
 
       handleCerrarModal();
@@ -213,8 +220,11 @@ export default function MisAudios({ onNavigate }) {
               className={styles.modalInput}
               type="text"
               value={nuevoNombre}
+              maxLength={MAX_AUDIO_NAME_LENGTH}
+              aria-label="Nuevo nombre del audio"
               onChange={(e) => setNuevoNombre(e.target.value)}
             />
+            <p className={styles.nameCounter}>{nuevoNombre.length}/{MAX_AUDIO_NAME_LENGTH} caracteres</p>
             <div className={styles.modalActions}>
               <button className={styles.btnCancelar} onClick={handleCerrarModal} disabled={guardando}>
                 <X size={14} /> Cancelar

@@ -6,6 +6,8 @@ const Audio = require('../models/Audio');
 const cloudinary = require('../config/cloudinary');
 const authMiddleware = require('../middleware/auth');
 
+const MAX_AUDIO_NAME_LENGTH = 50;
+
 // GET /api/audios - audios del usuario autenticado
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -39,13 +41,17 @@ router.get('/download/:id', tokenDesdeQuery, authMiddleware, async (req, res) =>
 // PUT /api/audios/:id - renombrar
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { fileName } = req.body;
-    if (!fileName || fileName.trim().length === 0) {
+    const fileName = typeof req.body?.fileName === 'string' ? req.body.fileName.trim() : '';
+    if (!fileName) {
       return res.status(400).json({ message: 'El nombre del audio es obligatorio.' });
     }
+    if (fileName.length > MAX_AUDIO_NAME_LENGTH) {
+      return res.status(400).json({ message: `El nombre del audio no puede superar ${MAX_AUDIO_NAME_LENGTH} caracteres.` });
+    }
+
     const audioActualizado = await Audio.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
-      { fileName: fileName.trim() },
+      { fileName },
       { new: true }
     );
     if (!audioActualizado) return res.status(404).json({ message: 'Audio no encontrado.' });
@@ -68,7 +74,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         const archivoConExtension = partes.pop(); // ej: nombre.mp3
         const nombreArchivo = archivoConExtension.split('.')[0];
         const carpeta = partes.pop(); // ej: eduaudio_audios
-        
         const publicId = carpeta === 'eduaudio_audios' ? `${carpeta}/${nombreArchivo}` : nombreArchivo;
 
         await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
@@ -79,7 +84,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
     // Borrado definitivo del documento en MongoDB para evitar audios "fantasma"
     await Audio.deleteOne({ _id: audio._id, userId: req.userId });
-    
+
     res.json({ message: 'Audio eliminado correctamente.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
