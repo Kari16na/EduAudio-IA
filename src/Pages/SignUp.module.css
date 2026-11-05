@@ -62,7 +62,7 @@
 
 .inputPassword {
   width: 100%;
-  padding: 12px 45px 12px 16px; /* Espacio a la derecha para que el texto no tape el ícono del ojo */
+  padding: 12px 45px 12px 16px;
   border: 2px solid rgba(74, 63, 143, 0.15);
   border-radius: var(--radius-sm);
   font-size: 15px;
@@ -192,9 +192,14 @@
   text-align: center;
 }
 
+/* Mismo estilo de color que el botón Entrar del formulario de login */
 .btnPrimary {
   width: 100%;
-  background: #ffb84d;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-dark)
+  );
   color: var(--color-white);
   border: none;
   border-radius: var(--radius-md);
@@ -202,15 +207,13 @@
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(245, 166, 35, 0.3);
+  box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
   font-family: var(--font-main);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s;
   margin-bottom: 8px;
 }
 
 .btnPrimary:hover {
-  background: #f29b24;
-  box-shadow: 0 5px 16px rgba(220, 132, 20, 0.36);
   transform: translateY(-1px);
 }
 
@@ -256,7 +259,7 @@
   display: flex;
   flex-direction: column;
   width: min(100%, 560px);
-  max-height: min( min(780px, 88vh), 88dvh );
+  max-height: min(min(780px, 88vh), 88dvh);
   overflow: hidden;
   background: #fff;
   color: var(--color-text-dark, #292742);
