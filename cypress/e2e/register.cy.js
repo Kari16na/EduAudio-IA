@@ -1,121 +1,73 @@
-import { useState } from "react";
-import { KeyRound, AlertCircle, Eye, EyeOff } from "lucide-react";
-import FormCard from "../Components/FormCard";
-import { API_URL } from "../config";
-import styles from "./Login.module.css";
+describe('Registro de Usuario - EduAudio IA', () => {
+  beforeEach(() => {
+    cy.visit('http://localhost:5173');
+    cy.contains('Iniciar Sesión').click();
+    cy.contains('Regístrate').click();
+  });
 
-export default function Login({ onNavigate }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(null);
+  it('muestra error si los campos están vacíos', () => {
+    cy.get('[data-testid="signup-submit"]').click();
+    cy.contains('Por favor completa todos los campos.');
+  });
 
-  async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      setError("Por favor completa todos los campos.");
-      return;
-    }
+  it('muestra error si el correo no tiene formato válido', () => {
+    cy.get('[data-testid="signup-name"]').type('Ana Pérez');
+    cy.get('[data-testid="signup-email"]').type('correoinvalido.com');
+    cy.get('[data-testid="signup-password"]').type('Test1234');
+    cy.get('[data-testid="signup-confirm-password"]').type('Test1234');
+    cy.get('[data-testid="signup-terms-link"]').click();
+    cy.get('[data-testid="terms-body"]').scrollTo('bottom');
+    cy.get('[data-testid="terms-accept-btn"]').click();
+    cy.get('[data-testid="signup-submit"]').click();
+    cy.contains('Ingresa un correo electrónico válido');
+  });
 
-    setError(null);
+  it('muestra error si la contraseña tiene menos de 8 caracteres', () => {
+    cy.get('[data-testid="signup-name"]').type('Ana Pérez');
+    cy.get('[data-testid="signup-email"]').type('ana@test.com');
+    cy.get('[data-testid="signup-password"]').type('123');
+    cy.get('[data-testid="signup-confirm-password"]').type('123');
+    cy.get('[data-testid="signup-terms-link"]').click();
+    cy.get('[data-testid="terms-body"]').scrollTo('bottom');
+    cy.get('[data-testid="terms-accept-btn"]').click();
+    cy.get('[data-testid="signup-submit"]').click();
+    cy.contains('La contraseña debe tener mínimo 8 caracteres.');
+  });
 
-    try {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
+  it('muestra error si las contraseñas no coinciden', () => {
+    cy.get('[data-testid="signup-name"]').type('Ana Pérez');
+    cy.get('[data-testid="signup-email"]').type('ana@test.com');
+    cy.get('[data-testid="signup-password"]').type('Test1234');
+    cy.get('[data-testid="signup-confirm-password"]').type('Test5678');
+    cy.get('[data-testid="signup-terms-link"]').click();
+    cy.get('[data-testid="terms-body"]').scrollTo('bottom');
+    cy.get('[data-testid="terms-accept-btn"]').click();
+    cy.get('[data-testid="signup-submit"]').click();
+    cy.contains('Las contraseñas no coinciden.');
+  });
 
-      if (!res.ok) {
-        setError(data.message);
-        return;
-      }
+  it('solicita aceptar los términos', () => {
+    cy.get('[data-testid="signup-name"]').type('Ana Pérez');
+    cy.get('[data-testid="signup-email"]').type('ana@test.com');
+    cy.get('[data-testid="signup-password"]').type('Test1234');
+    cy.get('[data-testid="signup-confirm-password"]').type('Test1234');
+    cy.get('[data-testid="signup-submit"]').click();
+    cy.contains('Debes aceptar los Términos y Condiciones para continuar.');
+  });
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      onNavigate("dashboard");
-    } catch {
-      setError("Error al conectar con el servidor.");
-    }
-  }
-
-  return (
-    <FormCard onNavigate={onNavigate}>
-      <div className={styles.header}>
-        <div className={styles.headerIcon}>
-          <KeyRound size={40} />
-        </div>
-        <h2 className={styles.title}>Iniciar Sesión</h2>
-        <p className={styles.subtitle}>Bienvenido de nuevo a EduAudio IA</p>
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Correo Electrónico:</label>
-        <input
-          className={styles.input}
-          type="email"
-          data-testid="login-email"
-          placeholder="ejemplo@correo.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Contraseña:</label>
-        <div style={{ position: "relative", width: "100%" }}>
-          <input
-            className={styles.input}
-            type={showPassword ? "text" : "password"}
-            data-testid="login-password"
-            placeholder="Tu contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              color: "#6b7280",
-              display: "flex",
-              alignItems: "center"
-            }}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className={styles.error} data-testid="login-error">
-          <AlertCircle size={16} />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <button className={styles.btnPrimary} data-testid="login-submit" onClick={handleLogin}>
-        Entrar
-      </button>
-
-      <div className={styles.links}>
-        <button className={styles.btnLink} onClick={() => onNavigate("forgot")}>
-          ¿Olvidaste tu contraseña?
-        </button>
-        <span className={styles.linkText}>
-          ¿No tienes una cuenta?{" "}
-          <button className={styles.btnLink} onClick={() => onNavigate("signup")}>
-            Regístrate
-          </button>
-        </span>
-      </div>
-    </FormCard>
-  );
-}
+  it('crea cuenta y solicita confirmar el email', () => {
+    const correo = `ana${Date.now()}@test.com`;
+    cy.intercept('POST', '**/api/users/register', { statusCode: 201, body: { message: 'Revisa tu correo' } }).as('register');
+    cy.get('[data-testid="signup-name"]').type('Ana Pérez');
+    cy.get('[data-testid="signup-email"]').type(correo);
+    cy.get('[data-testid="signup-password"]').type('Test1234');
+    cy.get('[data-testid="signup-confirm-password"]').type('Test1234');
+    cy.get('[data-testid="signup-terms-link"]').click();
+    cy.get('[data-testid="terms-body"]').scrollTo('bottom');
+    cy.get('[data-testid="terms-accept-btn"]').click();
+    cy.get('[data-testid="signup-submit"]').click();
+    cy.wait('@register');
+    cy.contains('Verifica tu cuenta');
+    cy.contains(correo);
+  });
+});

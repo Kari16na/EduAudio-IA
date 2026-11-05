@@ -1,90 +1,134 @@
-import { useState, useEffect } from "react";
-import Landing        from "./Pages/Landing";
-import Login          from "./Pages/Login";
-import SignUp         from "./Pages/SignUp";
-import ForgotPassword from "./Pages/ForgotPassword";
-import Dashboard      from "./Pages/Dashboard";
-import MisAudios      from "./Pages/MisAudios";
-import Player         from "./Pages/Player";
-import ResetPassword  from "./Pages/ResetPassword";
-import Perfil         from "./Pages/Perfil";
-import VerifyEmail    from "./Pages/VerifyEmail";
+import { useState, useRef, useEffect } from "react";
+import { UserPlus, Eye, EyeOff, CheckCircle, AlertCircle, X } from "lucide-react";
+import FormCard from "../Components/FormCard";
+import { API_URL } from "../config";
+import styles from "./SignUp.module.css";
 
-function getInitialPage() {
-  const pathname = window.location.pathname;
-
-  if (pathname === "/reset-password") return "reset";
-  if (pathname === "/verify-email") return "verify-email";
-
-  const protectedPages = ["dashboard", "audios", "player", "perfil"];
-  const page = pathname.replace(/^\//, "") || "landing";
-
-  if (protectedPages.includes(page) && !localStorage.getItem("token")) {
-    return "login";
-  }
-
-  return protectedPages.includes(page) ? page : "landing";
-}
-
-export default function App() {
-  const [currentPage, setCurrentPage] = useState(getInitialPage);
+export default function SignUp({ onNavigate }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [canAccept, setCanAccept] = useState(false);
+  const termsBodyRef = useRef(null);
 
   useEffect(() => {
-    const pathname = window.location.pathname;
-    const isProtected = ["dashboard", "audios", "player", "perfil"].includes(currentPage);
-
-    if (pathname === "/reset-password" && currentPage !== "reset") {
-      window.history.pushState({}, "", "/reset-password");
-    } else if (pathname === "/verify-email" && currentPage !== "verify-email") {
-      window.history.pushState({}, "", "/verify-email");
-    } else if (isProtected && pathname !== `/${currentPage}`) {
-      window.history.pushState({}, "", `/${currentPage}`);
-    } else if (!isProtected && pathname !== "/" && currentPage === "landing") {
-      window.history.pushState({}, "", "/");
+    if (showTerms && termsBodyRef.current) {
+      const el = termsBodyRef.current;
+      setCanAccept(el.scrollHeight <= el.clientHeight + 5);
     }
-  }, [currentPage]);
+  }, [showTerms]);
 
-  function navigate(page) {
-    const protegidas = ["dashboard", "audios", "player", "perfil"];
-
-    if (protegidas.includes(page) && !localStorage.getItem("token")) {
-      setCurrentPage("login");
-      window.history.pushState({}, "", "/login");
-      return;
-    }
-
-    setCurrentPage(page);
-
-    const routeMap = {
-      landing: "/",
-      login: "/login",
-      signup: "/signup",
-      forgot: "/forgot-password",
-      dashboard: "/dashboard",
-      audios: "/audios",
-      player: "/player",
-      perfil: "/perfil",
-      reset: "/reset-password",
-      "verify-email": "/verify-email",
-    };
-
-    const nextPath = routeMap[page] || "/";
-    window.history.pushState({}, "", nextPath);
-    window.scrollTo(0, 0);
+  function openTerms(e) {
+    e.preventDefault();
+    setCanAccept(false);
+    setShowTerms(true);
   }
 
-  const pages = {
-    landing:   <Landing        onNavigate={navigate} />,
-    login:     <Login          onNavigate={navigate} />,
-    signup:    <SignUp         onNavigate={navigate} />,
-    forgot:    <ForgotPassword onNavigate={navigate} />,
-    dashboard: <Dashboard      onNavigate={navigate} />,
-    audios:    <MisAudios      onNavigate={navigate} />,
-    player:    <Player         onNavigate={navigate} />,
-    perfil:    <Perfil         onNavigate={navigate} />,
-    reset:     <ResetPassword  onNavigate={navigate} />,
-    "verify-email": <VerifyEmail onNavigate={navigate} />,
-  };
+  function handleTermsCheck(e) {
+    if (e.target.checked) {
+      setCanAccept(false);
+      setShowTerms(true);
+    } else setAcceptTerms(false);
+  }
 
-  return pages[currentPage];
+  function handleTermsScroll(e) {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) setCanAccept(true);
+  }
+
+  async function handleRegister() {
+    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
+      setError("Por favor completa todos los campos."); return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError("Ingresa un correo electrónico válido."); return;
+    }
+    if (password.length < 8) { setError("La contraseña debe tener mínimo 8 caracteres."); return; }
+    if (password !== confirmPassword) { setError("Las contraseñas no coinciden."); return; }
+    if (!acceptTerms) { setError("Debes aceptar los Términos y Condiciones para continuar."); return; }
+
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/users/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: name, email: email.trim(), password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message || "No se pudo crear la cuenta."); return; }
+      localStorage.setItem("pendingVerificationEmail", email.trim().toLowerCase());
+      onNavigate("verify-email");
+    } catch {
+      setError("Error al conectar con el servidor.");
+    }
+  }
+
+  const passwordLevel = !password ? 0 : password.length < 8 ? 1 : password.length <= 11 ? 2 : 3;
+  const levelLabels = ["", "Débil", "Media", "Fuerte"];
+  const levelClasses = ["", styles.level1, styles.level2, styles.level3];
+  const textClasses = ["", styles.textLevel1, styles.textLevel2, styles.textLevel3];
+
+  return (
+    <FormCard onNavigate={onNavigate}>
+      <div className={styles.header}>
+        <div className={styles.headerIcon}><UserPlus size={40} /></div>
+        <h2 className={styles.title}>Crea tu cuenta</h2>
+        <p className={styles.subtitle}>Únete a la comunidad de estudio inteligente</p>
+      </div>
+      <div className={styles.fieldGroup}>
+        <label className={styles.label} htmlFor="signup-name">Ingrese su nombre:</label>
+        <input id="signup-name" className={styles.input} type="text" data-testid="signup-name" placeholder="Ej: Karina Romero" maxLength={50} value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className={styles.fieldGroup}>
+        <label className={styles.label} htmlFor="signup-email">Correo Electrónico:</label>
+        <input id="signup-email" className={styles.input} type="email" data-testid="signup-email" placeholder="correo@ejemplo.com" maxLength={100} value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      <div className={styles.fieldGroup}>
+        <label className={styles.label} htmlFor="signup-password">Contraseña:</label>
+        <div className={styles.passwordContainer}>
+          <input id="signup-password" className={styles.inputPassword} type={showPassword ? "text" : "password"} data-testid="signup-password" placeholder="Mínimo 8 caracteres" maxLength={12} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button type="button" className={styles.eyeButton} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+        </div>
+        {password.length > 0 && <div className={styles.strengthWrapper}><div className={styles.strengthBars}>{[1, 2, 3].map((level) => <div key={level} className={`${styles.strengthBar} ${level <= passwordLevel ? levelClasses[passwordLevel] : ""}`} />)}</div><span className={`${styles.strengthLabel} ${textClasses[passwordLevel]}`}>{levelLabels[passwordLevel]}</span></div>}
+      </div>
+      <div className={styles.fieldGroup}>
+        <label className={styles.label} htmlFor="signup-confirm-password">Confirmar Contraseña:</label>
+        <div className={styles.passwordContainer}>
+          <input id="signup-confirm-password" className={`${styles.inputPassword} ${confirmPassword && password !== confirmPassword ? styles.inputError : ""}`} type={showConfirmPassword ? "text" : "password"} data-testid="signup-confirm-password" placeholder="Repite tu contraseña" maxLength={12} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          <button type="button" className={styles.eyeButton} aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+        </div>
+        {confirmPassword && password !== confirmPassword && <p className={styles.fieldError}>Las contraseñas no coinciden</p>}
+        {confirmPassword && password === confirmPassword && <p className={styles.fieldSuccess}><CheckCircle size={14} /> Las contraseñas coinciden</p>}
+      </div>
+      <div className={styles.checkboxGroup}>
+        <input type="checkbox" id="terms" data-testid="signup-terms" checked={acceptTerms} onChange={handleTermsCheck} className={styles.checkbox} />
+        <label htmlFor="terms" className={styles.checkboxLabel}>Acepto los{" "}<button type="button" className={styles.termsLink} data-testid="signup-terms-link" onClick={openTerms}>Términos y Condiciones</button></label>
+      </div>
+      {error && <div className={styles.error} data-testid="signup-error"><AlertCircle size={16} /> {error}</div>}
+      <button className={styles.btnPrimary} data-testid="signup-submit" onClick={handleRegister}>Crear cuenta</button>
+      <p className={styles.loginLink}>¿Ya tienes cuenta? <button className={styles.btnLink} onClick={() => onNavigate("login")}>Inicia sesión</button></p>
+
+      {showTerms && <div className={styles.modalOverlay} onClick={() => setShowTerms(false)}><div className={styles.modal} data-testid="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title" onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}><h3 className={styles.modalTitle} id="terms-modal-title">Términos y Condiciones de Uso de EduAudio IA</h3><button type="button" className={styles.modalClose} aria-label="Cerrar" onClick={() => setShowTerms(false)}><X size={20} /></button></div>
+        <div className={styles.modalBody} ref={termsBodyRef} onScroll={handleTermsScroll} data-testid="terms-body">
+          <p>Al crear una cuenta y utilizar EduAudio IA, aceptas de forma expresa y sin reservas los presentes Términos y Condiciones. Si no estás de acuerdo con alguno de ellos, por favor abstente de utilizar la plataforma.</p>
+          <h4>1. Descripción del Servicio</h4><p>EduAudio IA permite convertir archivos PDF y Word (.docx) de hasta 10 MB en resúmenes y audios con fines educativos y de estudio personal.</p>
+          <h4>2. Cuentas de Usuario y Seguridad</h4><ul><li><strong>Registro:</strong> Para acceder al servicio, debes crear una cuenta.</li><li><strong>Responsabilidad:</strong> Eres responsable de mantener la confidencialidad de tu contraseña y de la actividad de tu cuenta.</li><li><strong>Notificación:</strong> Debes notificarnos de inmediato cualquier uso no autorizado.</li></ul>
+          <h4>3. Propiedad Intelectual y Contenido del Usuario</h4><ul><li><strong>Tus Derechos:</strong> Conservas los derechos sobre los documentos que subas.</li><li><strong>Licencia de Uso:</strong> Garantizas que tienes los permisos necesarios y otorgas una licencia limitada, gratuita y no exclusiva para procesar, extraer texto, resumir y almacenar temporalmente el archivo con el fin de prestarte el servicio.</li><li><strong>Restricciones:</strong> No subas contenido que infrinja derechos de terceros, datos personales ajenos, contenido ilegal, difamatorio, obsceno o archivos maliciosos.</li></ul>
+          <h4>4. Conservación y Eliminación de Datos</h4><ul><li>El archivo original se procesa para extraer el texto y generar resultados.</li><li>El resumen y el audio se guardan en tu cuenta. Puedes eliminar audios desde “Mis Audios”.</li><li>El tratamiento de tus datos personales se rige por la Política de Privacidad.</li></ul>
+          <h4>5. Limitación de Responsabilidad y Garantías de la IA</h4><ul><li>Los resultados son para uso personal y de estudio. Para usos comerciales o públicos, debes contar con los derechos necesarios.</li><li>La IA puede producir errores u omisiones. El servicio se ofrece “tal cual”; verifica los resultados con el documento original.</li><li>EduAudio IA no se responsabiliza por fallas temporales ni decisiones tomadas basándose exclusivamente en los resultados generados.</li></ul>
+          <h4>6. Gratuidad del Servicio y Modificaciones</h4><ul><li>El servicio se ofrece actualmente de forma gratuita.</li><li>Los términos pueden actualizarse. El uso continuado después de los cambios implica su aceptación.</li></ul>
+          <p><strong>Última actualización:</strong> noviembre de 2026.</p>
+        </div>
+        {!canAccept && <p className={styles.modalHint}>Desplázate hasta el final para poder aceptar.</p>}
+        <button type="button" className={styles.modalAccept} data-testid="terms-accept-btn" disabled={!canAccept} onClick={() => { setAcceptTerms(true); setShowTerms(false); }}>Aceptar y cerrar</button>
+      </div></div>}
+    </FormCard>
+  );
 }

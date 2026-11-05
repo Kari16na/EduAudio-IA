@@ -11,119 +11,24 @@ export default function Login({ onNavigate }) {
   const [error, setError] = useState(null);
 
   async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      setError("Por favor completa todos los campos.");
-      return;
-    }
+    if (!email.trim() || !password) { setError("Por favor completa todos los campos."); return; }
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
+      const res = await fetch(`${API_URL}/users/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message);
-        return;
-      }
-
+      if (!res.ok) { setError(data.message); return; }
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       onNavigate("dashboard");
-    } catch {
-      setError("Error al conectar con el servidor.");
-    }
+    } catch { setError("Error al conectar con el servidor."); }
   }
 
-  return (
-    <FormCard onNavigate={onNavigate}>
-      <div className={styles.header}>
-        <div className={styles.headerIcon}>
-          <KeyRound size={40} />
-        </div>
-        <h2 className={styles.title}>Iniciar Sesión</h2>
-        <p className={styles.subtitle}>Bienvenido de nuevo a EduAudio IA</p>
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Correo Electrónico:</label>
-        <input
-          className={styles.input}
-          type="email"
-          data-testid="login-email"
-          placeholder="ejemplo@correo.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label className={styles.label}>Contraseña:</label>
-        <div style={{ position: "relative", width: "100%" }}>
-          <input
-            className={styles.input}
-            type={showPassword ? "text" : "password"}
-            data-testid="login-password"
-            placeholder="Tu contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              color: "#6b7280",
-              display: "flex",
-              alignItems: "center"
-            }}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className={styles.error} data-testid="login-error">
-          <AlertCircle size={16} />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <button
-        className={styles.btnPrimary}
-        data-testid="login-submit"
-        onClick={handleLogin}
-      >
-        Entrar
-      </button>
-
-      <div className={styles.links}>
-        <button
-          className={styles.btnLink}
-          onClick={() => onNavigate("forgot")}
-        >
-          ¿Olvidaste tu contraseña?
-        </button>
-        <span className={styles.linkText}>
-          ¿No tienes una cuenta?{" "}
-          <button
-            className={styles.btnLink}
-            onClick={() => onNavigate("signup")}
-          >
-            Regístrate
-          </button>
-        </span>
-      </div>
-    </FormCard>
-  );
+  return <FormCard onNavigate={onNavigate}>
+    <div className={styles.header}><div className={styles.headerIcon}><KeyRound size={40} /></div><h2 className={styles.title}>Iniciar Sesión</h2><p className={styles.subtitle}>Bienvenido de nuevo a EduAudio IA</p></div>
+    <div className={styles.fieldGroup}><label className={styles.label} htmlFor="login-email">Correo Electrónico:</label><input id="login-email" className={styles.input} type="email" data-testid="login-email" placeholder="ejemplo@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+    <div className={styles.fieldGroup}><label className={styles.label} htmlFor="login-password">Contraseña:</label><div style={{ position: "relative", width: "100%" }}><input id="login-password" className={styles.input} type={showPassword ? "text" : "password"} data-testid="login-password" placeholder="Tu contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ paddingRight: "40px", width: "100%", boxSizing: "border-box" }} /><button type="button" aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center" }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
+    {error && <div className={styles.error} data-testid="login-error"><AlertCircle size={16} /><span>{error}</span></div>}
+    <button className={styles.btnPrimary} data-testid="login-submit" onClick={handleLogin}>Entrar</button>
+    <div className={styles.links}><button className={styles.btnLink} onClick={() => onNavigate("forgot")}>¿Olvidaste tu contraseña?</button><span className={styles.linkText}>¿No tienes una cuenta? <button className={styles.btnLink} onClick={() => onNavigate("signup")}>Regístrate</button></span></div>
+  </FormCard>;
 }
