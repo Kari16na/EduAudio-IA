@@ -272,10 +272,15 @@ export default function SignUp({ onNavigate }) {
           <div
             className={styles.modal}
             data-testid="terms-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terms-modal-title"
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Términos y Condiciones</h3>
+              <h3 className={styles.modalTitle} id="terms-modal-title">
+                Términos y Condiciones de Uso de EduAudio IA
+              </h3>
               <button
                 type="button"
                 className={styles.modalClose}
@@ -292,41 +297,46 @@ export default function SignUp({ onNavigate }) {
               onScroll={handleTermsScroll}
               data-testid="terms-body"
             >
-              <p>Última actualización: noviembre de 2026.</p>
+              <p>Al crear una cuenta y utilizar EduAudio IA, aceptas de forma expresa y sin reservas los presentes Términos y Condiciones. Si no estás de acuerdo con alguno de ellos, por favor abstente de utilizar la plataforma.</p>
 
-              <p>
-                EduAudio IA convierte archivos PDF y Word (.docx) de hasta 10 MB
-                en resúmenes y audios para estudiar. Al crear una cuenta, eres
-                responsable de mantener segura tu contraseña y del uso de tu cuenta.
-              </p>
+              <h4>1. Descripción del Servicio</h4>
+              <p>EduAudio IA es una plataforma tecnológica que permite a los usuarios convertir archivos de texto en formato PDF y Word (.docx) de hasta 10 MB en resúmenes de texto y archivos de audio con fines educativos y de estudio personal.</p>
 
-              <p>
-                Conservas los derechos sobre tus documentos. Al subir uno,
-                confirmas que tienes permiso para usarlo y autorizas a EduAudio IA
-                a procesarlo únicamente para generar el resumen y el audio. No
-                subas contenido ilegal ni archivos que infrinjan derechos de otras
-                personas.
-              </p>
+              <h4>2. Cuentas de Usuario y Seguridad</h4>
+              <ul>
+                <li><strong>Registro:</strong> Para acceder al servicio, debes registrarte y crear una cuenta.</li>
+                <li><strong>Responsabilidad:</strong> Eres el único responsable de mantener la confidencialidad de tu contraseña y de todas las actividades que ocurran bajo tu cuenta.</li>
+                <li><strong>Notificación:</strong> Te comprometes a notificarnos de inmediato cualquier uso no autorizado o brecha de seguridad.</li>
+              </ul>
 
-              <p>
-                El archivo original se procesa para extraer su texto. El resumen y
-                el audio se guardan en tu cuenta hasta que los elimines. Puedes
-                borrar los audios desde “Mis Audios”.
-              </p>
+              <h4>3. Propiedad Intelectual y Contenido del Usuario</h4>
+              <ul>
+                <li><strong>Tus Derechos:</strong> Conservas todos los derechos de propiedad intelectual sobre los documentos que subas a la plataforma.</li>
+                <li><strong>Licencia de Uso:</strong> Al subir un archivo, garantizas que posees los derechos o autorizaciones necesarias sobre dicho contenido. Asimismo, otorgas a EduAudio IA una licencia limitada, gratuita y no exclusiva para procesar, extraer texto, resumir y almacenar temporalmente el archivo, únicamente con el fin de prestarte el servicio solicitado.</li>
+                <li><strong>Restricciones:</strong> Queda estrictamente prohibido subir material que infrinja derechos de autor de terceros, propiedad industrial, datos personales de otros o que contenga contenido ilegal, difamatorio, obsceno o malicioso (virus/malware).</li>
+              </ul>
 
-              <p>
-                Los resultados se generan con inteligencia artificial y pueden
-                contener errores u omisiones. Revísalos con el documento original.
-                Los audios están pensados para uso personal y de estudio; para
-                otros usos, debes tener los derechos necesarios.
-              </p>
+              <h4>4. Conservación y Eliminación de Datos</h4>
+              <ul>
+                <li><strong>Almacenamiento:</strong> El archivo original se procesa y el texto se extrae de forma inmediata para generar los resultados.</li>
+                <li><strong>Control del Usuario:</strong> El resumen y el audio generado se guardarán en tu perfil de usuario. Puedes eliminar los audios y resúmenes en cualquier momento desde la sección “Mis Audios”.</li>
+                <li><strong>Política de Datos:</strong> El manejo de tu información personal se rige bajo nuestra Política de Privacidad.</li>
+              </ul>
 
-              <p>
-                El servicio es gratuito actualmente. Para conocer cómo se procesan
-                tus datos y documentos, consulta nuestra Política de Privacidad.
-              </p>
+              <h4>5. Limitación de Responsabilidad y Garantías de la IA</h4>
+              <ul>
+                <li><strong>Uso Exclusivo:</strong> Los resúmenes y audios generados están destinados exclusivamente para uso personal y de estudio. Cualquier explotación comercial o uso público requiere que cuentes con los derechos legales sobre el contenido original.</li>
+                <li><strong>Exactitud de la IA:</strong> Los resultados se generan de forma automatizada mediante modelos de Inteligencia Artificial. EduAudio IA no garantiza la exactitud, veracidad o integridad de los resúmenes y audios. El servicio se proporciona “tal cual” y puede contener errores, imprecisiones u omisiones. Es tu responsabilidad verificar los resultados contrastándolos con el documento original.</li>
+                <li><strong>Exclusión de Daños:</strong> EduAudio IA no se hace responsable por pérdidas de información, fallas técnicas temporales, ni por decisiones académicas o profesionales tomadas con base en los resúmenes generados.</li>
+              </ul>
 
-              <p>Al aceptar, confirmas que leíste y aceptas estos términos.</p>
+              <h4>6. Gratuidad del Servicio y Modificaciones</h4>
+              <ul>
+                <li><strong>Costo:</strong> El acceso y uso de las herramientas de EduAudio IA se ofrece de forma totalmente gratuita para el usuario.</li>
+                <li><strong>Modificación de Términos:</strong> EduAudio IA se reserva el derecho de actualizar o modificar estos términos en cualquier momento para adaptarlos a mejoras técnicas o cambios legales. El uso continuo de la plataforma tras una modificación constituye la aceptación de los nuevos términos.</li>
+              </ul>
+
+              <p><strong>Última actualización:</strong> Noviembre de 2026.</p>
             </div>
 
             {!canAccept && (
