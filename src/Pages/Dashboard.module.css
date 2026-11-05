@@ -1,3 +1,4 @@
+/* src/Pages/Dashboard.module.css */
 .page {
   min-height: 100vh;
   background: linear-gradient(
@@ -426,12 +427,12 @@
   transition: all 0.2s;
 }
 
-/* Botón perfil */
+/* Botón perfil: comparte el estado de foco y hover con el botón de logout */
 .btnPerfil {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: none;
+  background: var(--color-white);
   border: 2px solid var(--color-primary);
   color: var(--color-primary);
   border-radius: var(--radius-full);
@@ -444,9 +445,8 @@
 }
 
 .btnPerfil:hover {
-  background: rgba(86, 67, 207, 0.15);
-  color: var(--color-primary);
-  transform: translateY(-1px);
+  background: var(--color-primary);
+  color: var(--color-white);
 }
 
 /* Contador */
