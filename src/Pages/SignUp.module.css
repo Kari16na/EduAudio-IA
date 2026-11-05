@@ -194,11 +194,7 @@
 
 .btnPrimary {
   width: 100%;
-  background: linear-gradient(
-    135deg,
-    var(--color-accent),
-    var(--color-accent-dark)
-  );
+  background: #ffb84d;
   color: var(--color-white);
   border: none;
   border-radius: var(--radius-md);
@@ -206,14 +202,21 @@
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
+  box-shadow: 0 4px 15px rgba(245, 166, 35, 0.3);
   font-family: var(--font-main);
-  transition: transform 0.2s;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   margin-bottom: 8px;
 }
 
 .btnPrimary:hover {
+  background: #f29b24;
+  box-shadow: 0 5px 16px rgba(220, 132, 20, 0.36);
   transform: translateY(-1px);
+}
+
+.btnPrimary:focus-visible {
+  outline: 3px solid rgba(242, 155, 36, 0.4);
+  outline-offset: 3px;
 }
 
 .loginLink {
@@ -327,6 +330,22 @@
 
 .modalBody p:last-child {
   margin-bottom: 0;
+}
+
+.modalBody h4 {
+  margin: 20px 0 8px;
+  color: var(--color-text-dark, #292742);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.modalBody ul {
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+
+.modalBody li {
+  margin-bottom: 8px;
 }
 
 .modalHint {
