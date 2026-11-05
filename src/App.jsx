@@ -8,12 +8,10 @@ import MisAudios from "./Pages/MisAudios";
 import Player from "./Pages/Player";
 import ResetPassword from "./Pages/ResetPassword";
 import Perfil from "./Pages/Perfil";
-import VerifyEmail from "./Pages/VerifyEmail";
 
 function getInitialPage() {
   const pathname = window.location.pathname;
   if (pathname === "/reset-password") return "reset";
-  if (pathname === "/verify-email") return "verify-email";
 
   const page = pathname.replace(/^\//, "") || "landing";
   const protectedPages = ["dashboard", "audios", "player", "perfil"];
@@ -26,9 +24,8 @@ export default function App() {
 
   useEffect(() => {
     const isProtected = ["dashboard", "audios", "player", "perfil"].includes(currentPage);
-    const routes = { reset: "/reset-password", "verify-email": "/verify-email" };
-    if (routes[currentPage] && window.location.pathname !== routes[currentPage]) {
-      window.history.pushState({}, "", routes[currentPage]);
+    if (currentPage === "reset" && window.location.pathname !== "/reset-password") {
+      window.history.pushState({}, "", "/reset-password");
     } else if (isProtected && window.location.pathname !== `/${currentPage}`) {
       window.history.pushState({}, "", `/${currentPage}`);
     } else if (currentPage === "landing" && window.location.pathname !== "/") {
@@ -46,7 +43,7 @@ export default function App() {
     const routes = {
       landing: "/", login: "/login", signup: "/signup", forgot: "/forgot-password",
       dashboard: "/dashboard", audios: "/audios", player: "/player", perfil: "/perfil",
-      reset: "/reset-password", "verify-email": "/verify-email",
+      reset: "/reset-password",
     };
     setCurrentPage(page);
     window.history.pushState({}, "", routes[page] || "/");
@@ -63,7 +60,6 @@ export default function App() {
     player: <Player onNavigate={navigate} />,
     perfil: <Perfil onNavigate={navigate} />,
     reset: <ResetPassword onNavigate={navigate} />,
-    "verify-email": <VerifyEmail onNavigate={navigate} />,
   };
   return pages[currentPage] || pages.landing;
 }

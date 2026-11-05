@@ -4,6 +4,19 @@ import FormCard from "../Components/FormCard";
 import { API_URL } from "../config";
 import styles from "./SignUp.module.css";
 
+function isValidEmail(value) {
+  const email = value.trim();
+  if (email.length > 254 || /\s/.test(email)) return false;
+  const parts = email.split("@");
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  if (!local || local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) return false;
+  if (!/^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/i.test(local)) return false;
+  const labels = domain.split(".");
+  if (labels.length < 2 || labels.some((label) => !label || label.length > 63 || !/^[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?$/i.test(label))) return false;
+  return /^[A-Z]{2,}$/i.test(labels[labels.length - 1]);
+}
+
 export default function SignUp({ onNavigate }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -46,8 +59,8 @@ export default function SignUp({ onNavigate }) {
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       setError("Por favor completa todos los campos."); return;
     }
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setError("Ingresa un correo electrónico válido."); return;
+    if (!isValidEmail(email)) {
+      setError("Ingresa un correo válido, por ejemplo nombre@dominio.com."); return;
     }
     if (password.length < 8) { setError("La contraseña debe tener mínimo 8 caracteres."); return; }
     if (password !== confirmPassword) { setError("Las contraseñas no coinciden."); return; }
@@ -58,12 +71,11 @@ export default function SignUp({ onNavigate }) {
       const res = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: name, email: email.trim(), password }),
+        body: JSON.stringify({ fullName: name.trim(), email: email.trim().toLowerCase(), password }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "No se pudo crear la cuenta."); return; }
-      localStorage.setItem("pendingVerificationEmail", email.trim().toLowerCase());
-      onNavigate("verify-email");
+      onNavigate("login");
     } catch {
       setError("Error al conectar con el servidor.");
     }
@@ -87,7 +99,7 @@ export default function SignUp({ onNavigate }) {
       </div>
       <div className={styles.fieldGroup}>
         <label className={styles.label} htmlFor="signup-email">Correo Electrónico:</label>
-        <input id="signup-email" className={styles.input} type="email" data-testid="signup-email" placeholder="correo@ejemplo.com" maxLength={100} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input id="signup-email" className={styles.input} type="email" data-testid="signup-email" placeholder="correo@ejemplo.com" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className={styles.fieldGroup}>
         <label className={styles.label} htmlFor="signup-password">Contraseña:</label>

@@ -2,94 +2,49 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const crypto = require('crypto');
-const { Resend } = require('resend');
 const User = require('../models/user');
 const cloudinary = require('../config/cloudinary');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const frontendUrl = () => (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 
-async function issueVerification(user) {
-  if (!resend) throw new Error('El servicio de correo no está configurado.');
-  const rawToken = crypto.randomBytes(32).toString('hex');
-  user.verificationToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-  user.verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  await user.save();
-  const link = `${frontendUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
-  const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'EduAudio IA <onboarding@resend.dev>',
-    to: [user.email],
-    subject: 'Verifica tu cuenta - EduAudio IA',
-    html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2 style="color:#4A3F8F">EduAudio IA</h2><p>Hola ${user.fullName},</p><p>Confirma tu correo para activar tu cuenta:</p><p><a href="${link}" style="display:inline-block;background:#F5A623;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Verificar mi cuenta</a></p><p>Este enlace vence en 24 horas. Si no solicitaste esta cuenta, ignora el mensaje.</p></div>`,
-  });
-  if (error) throw new Error('No se pudo enviar el correo de verificación.');
+function isValidEmail(value) {
+  if (typeof value !== 'string') return false;
+  const email = value.trim();
+  if (!email || email.length > 254 || /\s/.test(email)) return false;
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  if (!local || local.length > 64 || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false;
+  if (!/^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/i.test(local)) return false;
+  const labels = domain.split('.');
+  if (labels.length < 2 || labels.some((label) => !label || label.length > 63 || !/^[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?$/i.test(label))) return false;
+  return /^[A-Z]{2,}$/i.test(labels[labels.length - 1]);
 }
 
 router.post('/register', async (req, res) => {
-  let createdUser;
   try {
     const { fullName, email, password } = req.body || {};
     if (!fullName?.trim() || !email || !password) return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
-    const emailNormalized = String(email).trim().toLowerCase();
-    if (!emailPattern.test(emailNormalized) || emailNormalized.length > 254) return res.status(400).json({ message: 'Ingresa un correo electrónico válido.' });
+    if (!isValidEmail(email)) return res.status(400).json({ message: 'Ingresa un correo válido, por ejemplo nombre@dominio.com.' });
     if (password.length < 8) return res.status(400).json({ message: 'La contraseña debe tener mínimo 8 caracteres.' });
-    if (!resend) return res.status(503).json({ message: 'El servicio de verificación de correo no está configurado.' });
 
-    let user = await User.findOne({ email: emailNormalized });
-    if (user?.isVerified) return res.status(409).json({ message: 'Ya existe una cuenta con ese correo.' });
-    if (user) {
-      user.fullName = fullName.trim();
-      user.password = await bcrypt.hash(password, 10);
-    } else {
-      user = new User({ fullName: fullName.trim(), email: emailNormalized, password: await bcrypt.hash(password, 10), isVerified: false });
-      createdUser = user;
-    }
-    await issueVerification(user);
-    return res.status(201).json({ message: 'Cuenta pendiente de verificación. Revisa tu correo electrónico.' });
+    const emailNormalized = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: emailNormalized });
+    if (existingUser) return res.status(409).json({ message: 'Ya existe una cuenta con ese correo.' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({ fullName: fullName.trim(), email: emailNormalized, password: hashedPassword });
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
+    return res.status(201).json({
+      message: 'Usuario registrado correctamente.',
+      token,
+      user: { id: newUser._id, fullName: newUser.fullName, email: newUser.email, profilePhoto: newUser.profilePhoto || '' },
+    });
   } catch (error) {
-    if (createdUser?._id) await User.findByIdAndDelete(createdUser._id).catch(() => {});
     console.error('Error registrando usuario:', error.message);
-    return res.status(500).json({ message: 'No se pudo enviar el correo de verificación. Revisa la dirección e inténtalo de nuevo.' });
-  }
-});
-
-async function verifyEmailToken(token) {
-  const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
-  const user = await User.findOne({ verificationToken: tokenHash, verificationExpiresAt: { $gt: new Date() } });
-  if (!user) return null;
-  user.isVerified = true;
-  user.verificationToken = null;
-  user.verificationExpiresAt = null;
-  await user.save();
-  return user;
-}
-
-router.get('/verify-email', async (req, res) => {
-  try {
-    if (!req.query.token) return res.status(400).json({ message: 'Token de verificación inválido.' });
-    const user = await verifyEmailToken(req.query.token);
-    if (!user) return res.status(400).json({ message: 'El enlace de verificación es inválido o ha expirado.' });
-    return res.json({ message: 'Correo verificado correctamente.' });
-  } catch (error) {
-    console.error('Error verificando correo:', error.message);
-    return res.status(500).json({ message: 'No se pudo verificar el correo.' });
-  }
-});
-
-router.post('/verify-email', async (req, res) => {
-  try {
-    if (!req.body?.token) return res.status(400).json({ message: 'Token de verificación inválido.' });
-    const user = await verifyEmailToken(req.body.token);
-    if (!user) return res.status(400).json({ message: 'El enlace de verificación es inválido o ha expirado.' });
-    return res.json({ message: 'Correo verificado correctamente.' });
-  } catch (error) {
-    console.error('Error verificando correo:', error.message);
-    return res.status(500).json({ message: 'No se pudo verificar el correo.' });
+    return res.status(500).json({ message: 'Error al registrar usuario.' });
   }
 });
 
@@ -99,9 +54,11 @@ router.post('/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ message: 'Email y contraseña son obligatorios.' });
     const user = await User.findOne({ email: String(email).trim().toLowerCase() });
     if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ message: 'Credenciales inválidas.' });
-    if (!user.isVerified) return res.status(403).json({ message: 'Verifica tu correo antes de iniciar sesión.' });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
-    return res.json({ message: 'Inicio de sesión exitoso.', token, user: { id: user._id, fullName: user.fullName, email: user.email, profilePhoto: user.profilePhoto || '' } });
+    return res.json({
+      message: 'Inicio de sesión exitoso.', token,
+      user: { id: user._id, fullName: user.fullName, email: user.email, profilePhoto: user.profilePhoto || '' },
+    });
   } catch (error) {
     console.error('Error iniciando sesión:', error.message);
     return res.status(500).json({ message: 'Error al iniciar sesión.' });
@@ -112,9 +69,9 @@ router.put('/update', authMiddleware, async (req, res) => {
   try {
     const { fullName } = req.body || {};
     if (!fullName?.trim()) return res.status(400).json({ message: 'El nombre completo es obligatorio.' });
-    const user = await User.findByIdAndUpdate(req.userId, { fullName: fullName.trim() }, { new: true });
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-    return res.json({ message: 'Perfil actualizado correctamente.', user: { id: user._id, fullName: user.fullName, email: user.email, profilePhoto: user.profilePhoto || '' } });
+    const updatedUser = await User.findByIdAndUpdate(req.userId, { fullName: fullName.trim() }, { new: true });
+    if (!updatedUser) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    return res.json({ message: 'Perfil actualizado correctamente.', user: { id: updatedUser._id, fullName: updatedUser.fullName, email: updatedUser.email, profilePhoto: updatedUser.profilePhoto || '' } });
   } catch (error) {
     console.error('Error actualizando usuario:', error.message);
     return res.status(500).json({ message: 'Error al actualizar perfil.' });
@@ -157,8 +114,8 @@ router.post('/photo', authMiddleware, upload.single('photo'), async (req, res) =
 
 router.delete('/delete-account', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.userId);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    const deletedUser = await User.findByIdAndDelete(req.userId);
+    if (!deletedUser) return res.status(404).json({ message: 'Usuario no encontrado.' });
     return res.json({ message: 'Cuenta eliminada correctamente.' });
   } catch (error) {
     console.error('Error eliminando cuenta:', error.message);

@@ -10,16 +10,19 @@ describe('Registro de Usuario - EduAudio IA', () => {
     cy.contains('Por favor completa todos los campos.');
   });
 
-  it('muestra error si el correo no tiene formato válido', () => {
-    cy.get('[data-testid="signup-name"]').type('Ana Pérez');
-    cy.get('[data-testid="signup-email"]').type('correoinvalido.com');
-    cy.get('[data-testid="signup-password"]').type('Test1234');
-    cy.get('[data-testid="signup-confirm-password"]').type('Test1234');
-    cy.get('[data-testid="signup-terms-link"]').click();
-    cy.get('[data-testid="terms-body"]').scrollTo('bottom');
-    cy.get('[data-testid="terms-accept-btn"]').click();
-    cy.get('[data-testid="signup-submit"]').click();
-    cy.contains('Ingresa un correo electrónico válido');
+  it('rechaza correos sin formato correcto', () => {
+    const correosInvalidos = ['correoinvalido.com', 'nombre@dominio', 'nombre@@dominio.com', 'nombre..apellido@dominio.com', 'nombre@-dominio.com', 'nombre@dominio-.com'];
+    correosInvalidos.forEach((correo) => {
+      cy.get('[data-testid="signup-name"]').clear().type('Ana Pérez');
+      cy.get('[data-testid="signup-email"]').clear().type(correo);
+      cy.get('[data-testid="signup-password"]').clear().type('Test1234');
+      cy.get('[data-testid="signup-confirm-password"]').clear().type('Test1234');
+      cy.get('[data-testid="signup-terms-link"]').click();
+      cy.get('[data-testid="terms-body"]').scrollTo('bottom');
+      cy.get('[data-testid="terms-accept-btn"]').click();
+      cy.get('[data-testid="signup-submit"]').click();
+      cy.contains('Ingresa un correo válido');
+    });
   });
 
   it('muestra error si la contraseña tiene menos de 8 caracteres', () => {
@@ -55,9 +58,9 @@ describe('Registro de Usuario - EduAudio IA', () => {
     cy.contains('Debes aceptar los Términos y Condiciones para continuar.');
   });
 
-  it('crea cuenta y solicita confirmar el email', () => {
-    const correo = `ana${Date.now()}@test.com`;
-    cy.intercept('POST', '**/api/users/register', { statusCode: 201, body: { message: 'Revisa tu correo' } }).as('register');
+  it('registra correctamente con un formato de correo válido y redirige al Login', () => {
+    const correo = `ana${Date.now()}@gmail.com`;
+    cy.intercept('POST', '**/api/users/register', { statusCode: 201, body: { message: 'Usuario registrado correctamente.' } }).as('register');
     cy.get('[data-testid="signup-name"]').type('Ana Pérez');
     cy.get('[data-testid="signup-email"]').type(correo);
     cy.get('[data-testid="signup-password"]').type('Test1234');
@@ -67,7 +70,6 @@ describe('Registro de Usuario - EduAudio IA', () => {
     cy.get('[data-testid="terms-accept-btn"]').click();
     cy.get('[data-testid="signup-submit"]').click();
     cy.wait('@register');
-    cy.contains('Verifica tu cuenta');
-    cy.contains(correo);
+    cy.get('[data-testid="login-submit"]').should('be.visible');
   });
 });
