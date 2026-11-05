@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Lock, CheckCircle, AlertCircle } from "lucide-react";
-import FormCard from "../Components/FormCard";
+import FormCard from "../components/FormCard";
 import styles from "./ForgotPassword.module.css";
 import { API_URL } from "../config";
 

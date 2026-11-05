@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Play, Download, Pencil, Trash2, ArrowLeft, Check, X } from "lucide-react";
-import NavBar from "../Components/NavBar";
+import NavBar from "../components/NavBar";
 import { getAudios, deleteAudio, updateAudioName, normalizeAudioUrl } from "../services/api";
 import styles from "./MisAudios.module.css";
 

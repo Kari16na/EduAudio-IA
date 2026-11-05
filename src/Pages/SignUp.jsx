@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
-import FormCard from "../Components/FormCard";
+import FormCard from "../components/FormCard";
 import { API_URL } from "../config";
 import styles from "./SignUp.module.css";
 

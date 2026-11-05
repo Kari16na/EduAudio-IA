@@ -18,7 +18,12 @@
   color: var(--color-text-gray);
 }
 
+/* Botones de la barra superior: Mi Perfil y Cerrar Sesión */
+.btnPerfil,
 .btnLogout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: none;
   border: 2px solid var(--color-primary);
   color: var(--color-primary);
@@ -31,9 +36,11 @@
   transition: all 0.2s;
 }
 
+.btnPerfil:hover,
 .btnLogout:hover {
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: rgba(86, 67, 207, 0.15);
+  color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 /* Grid de dos columnas */
@@ -87,7 +94,55 @@
   color: var(--color-secondary);
 }
 
-/* Zona drag & drop */
+/* Selector de idioma */
+.languageSelector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.langBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  background: none;
+  border: 2px solid rgba(86, 67, 207, 0.2);
+  color: var(--color-text-gray);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+.langBtn:hover {
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+}
+
+.langBtnActive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+
+/* Zona de carga de archivo */
 .dropZone {
   border: 2px dashed rgba(86, 67, 207, 0.3);
   border-radius: var(--radius-md);
@@ -150,19 +205,7 @@
   word-break: break-all;
 }
 
-.select {
-  width: 100%;
-  padding: 10px 14px;
-  border: 2px solid rgba(74, 63, 143, 0.15);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--color-text-dark);
-  outline: none;
-  font-family: var(--font-main);
-  cursor: pointer;
-}
-
+/* Botón Generar Audio */
 .btnGenerate {
   display: flex;
   align-items: center;
@@ -196,7 +239,7 @@
   cursor: not-allowed;
 }
 
-/* Estado vacío */
+/* Estado vacío y contador */
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -215,15 +258,17 @@
   opacity: 0.4;
 }
 
+.statNumber {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--color-primary);
+  margin: 0 0 4px 0;
+}
+
 .emptyText {
   font-size: 15px;
   color: var(--color-text-gray);
   margin-bottom: 8px;
-}
-
-.emptySubtext {
-  font-size: 13px;
-  color: rgba(136, 136, 136, 0.7);
 }
 
 .btnSecondary {
@@ -245,7 +290,8 @@
   background: var(--color-primary);
   color: var(--color-white);
 }
-/* Spinner overlay */
+
+/* Spinner de carga */
 .spinnerOverlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -298,161 +344,4 @@
   margin: 0;
   text-align: center;
   max-width: 280px;
-}
-
-.categorySelect {
-  width: 100%;
-  padding: 10px 14px;
-  border: 2px solid rgba(86, 67, 207, 0.2);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--color-text-dark);
-  outline: none;
-  font-family: var(--font-main);
-  cursor: pointer;
-  margin-bottom: 4px;
-  transition: border-color 0.2s;
-}
-
-.categorySelect:focus {
-  border-color: var(--color-secondary);
-}
-
-.youtubeHint {
-  font-size: 12px;
-  color: var(--color-text-gray);
-  margin-top: -6px;
-  font-style: italic;
-}
-
-/* Sección YouTube */
-.divider {
-  height: 1px;
-  background: rgba(86, 67, 207, 0.15);
-  margin: 4px 0;
-}
-
-.youtubeInput {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid rgba(74, 63, 143, 0.15);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--color-text-dark);
-  outline: none;
-  font-family: var(--font-main);
-  transition: border-color 0.2s;
-}
-
-.youtubeInput:focus {
-  border-color: var(--color-secondary);
-}
-
-.btnYoutube {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  background: none;
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  font-size: 15px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-  transition: all 0.2s;
-}
-
-.btnYoutube:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: var(--color-white);
-}
-
-.btnYoutube:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Selector de idioma */
-.languageSelector {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.langBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  justify-content: center;
-  background: none;
-  border: 2px solid rgba(86, 67, 207, 0.2);
-  color: var(--color-text-gray);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-  transition: all 0.2s;
-}
-
-.langBtn:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
-}
-
-.langBtnActive {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  justify-content: center;
-  background: var(--color-primary);
-  border: 2px solid var(--color-primary);
-  color: var(--color-white);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-  transition: all 0.2s;
-}
-
-/* Botón perfil */
-.btnPerfil {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: var(--radius-full);
-  padding: 6px 18px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: var(--font-main);
-  transition: all 0.2s;
-}
-
-.btnPerfil:hover {
-  background: rgba(86, 67, 207, 0.15);
-  color: var(--color-primary);
-  transform: translateY(-1px);
-}
-
-/* Contador */
-.statNumber {
-  font-size: 40px;
-  font-weight: 900;
-  color: var(--color-primary);
-  margin: 0 0 4px 0;
 }

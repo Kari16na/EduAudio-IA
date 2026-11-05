@@ -1,5 +1,5 @@
 import { useState } from "react";
-import FormCard from "../Components/FormCard";
+import FormCard from "../components/FormCard";
 import styles from "./ResetPassword.module.css";
 
 export default function ResetPassword({ onNavigate }) {

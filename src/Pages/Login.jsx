@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { KeyRound, AlertCircle, Eye, EyeOff } from "lucide-react";
-import FormCard from "../Components/FormCard";
+import FormCard from "../components/FormCard";
 import { API_URL } from "../config";
 import styles from "./Login.module.css";
 
