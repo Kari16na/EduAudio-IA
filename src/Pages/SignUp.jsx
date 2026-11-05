@@ -71,7 +71,7 @@ export default function SignUp({ onNavigate }) {
       return;
     }
     if (!acceptTerms) {
-      setError("Debes aceptar los Términos y Condiciones.");
+      setError("Debes aceptar los Términos y Condiciones para continuar.");
       return;
     }
     setError(null);
@@ -294,100 +294,39 @@ export default function SignUp({ onNavigate }) {
             >
               <p>Última actualización: noviembre de 2026.</p>
 
-              <h4>1. Objeto del servicio y registro</h4>
               <p>
-                EduAudio IA es una herramienta web que convierte documentos PDF
-                y Word en audio, ya sea resumiéndolos con inteligencia
-                artificial o leyéndolos con voz sintetizada, con fines de
-                estudio. Para usarla debes crear una cuenta. Eres responsable
-                de la información que registras, de mantener la
-                confidencialidad de tu contraseña y de la actividad realizada
-                con tu cuenta. Podemos modificar, suspender o interrumpir
-                funciones del servicio en cualquier momento.
+                EduAudio IA convierte archivos PDF y Word (.docx) de hasta 10 MB
+                en resúmenes y audios para estudiar. Al crear una cuenta, eres
+                responsable de mantener segura tu contraseña y del uso de tu cuenta.
               </p>
 
-              <h4>2. Propiedad de tus documentos y licencia de uso</h4>
               <p>
-                Sigues siendo el dueño de los documentos que subes. Al subir un
-                archivo declaras que eres su titular o que tienes los derechos
-                y permisos necesarios para usarlo, incluidos los derechos de
-                autor. No reclamamos la propiedad de tus archivos ni de los
-                resúmenes y audios generados a partir de ellos. Nos otorgas
-                únicamente una licencia limitada, no exclusiva y gratuita para
-                procesar, resumir y transformar tu documento en texto y audio
-                dentro del sistema, con el único fin de prestarte el servicio.
+                Conservas los derechos sobre tus documentos. Al subir uno,
+                confirmas que tienes permiso para usarlo y autorizas a EduAudio IA
+                a procesarlo únicamente para generar el resumen y el audio. No
+                subas contenido ilegal ni archivos que infrinjan derechos de otras
+                personas.
               </p>
 
-              <h4>3. Contenido prohibido</h4>
               <p>
-                No puedes subir documentos que infrinjan derechos de autor de
-                terceros (por ejemplo, libros completos protegidos), ni
-                contenido pornográfico, violento, que incite al odio, difamatorio
-                o contrario a las leyes de Colombia, ni archivos con virus o
-                código dañino. Podemos eliminar contenido y suspender cuentas
-                que incumplan estas normas.
+                El archivo original se procesa para extraer su texto. El resumen y
+                el audio se guardan en tu cuenta hasta que los elimines. Puedes
+                borrar los audios desde “Mis Audios”.
               </p>
 
-              <h4>4. Almacenamiento y eliminación</h4>
               <p>
-                No guardamos el archivo original que subes: solo extraemos su
-                texto para generar el resumen y el audio. El resumen, su texto y
-                el audio se conservan en tu cuenta hasta que los elimines. Puedes
-                borrar audios individuales desde "Mis Audios" y eliminar tu
-                cuenta desde tu perfil, lo que borra también tus audios. Podemos
-                rechazar o eliminar archivos que superen el tamaño permitido por
-                el sistema.
+                Los resultados se generan con inteligencia artificial y pueden
+                contener errores u omisiones. Revísalos con el documento original.
+                Los audios están pensados para uso personal y de estudio; para
+                otros usos, debes tener los derechos necesarios.
               </p>
 
-              <h4>5. Límites de la inteligencia artificial y uso de los audios</h4>
               <p>
-                Los resúmenes, traducciones y audios los genera inteligencia
-                artificial y pueden contener errores, omisiones o información
-                inexacta. El servicio se ofrece "tal cual" y no nos hacemos
-                responsables si un resumen omite información importante. No lo
-                uses para documentos médicos, legales o financieros donde un
-                error pueda causar daños, y verifica siempre con el documento
-                original. Los audios están pensados para tu uso personal y de
-                estudio; si quieres darles un uso comercial, debes contar con
-                los derechos sobre el documento original.
+                El servicio es gratuito actualmente. Para conocer cómo se procesan
+                tus datos y documentos, consulta nuestra Política de Privacidad.
               </p>
 
-              <h4>6. Propiedad intelectual de la plataforma</h4>
-              <p>
-                El diseño, el código y la marca EduAudio IA pertenecen a sus
-                creadores. No está permitido copiar el sistema, aplicar
-                ingeniería inversa ni extraer datos de forma automática sin
-                autorización.
-              </p>
-
-              <h4>7. Servicio gratuito</h4>
-              <p>
-                Actualmente el servicio es gratuito. Si en el futuro se
-                incluyen planes de pago, se informarán con anticipación y no se
-                aplicarán cobros sin tu consentimiento.
-              </p>
-
-              <h4>8. Privacidad y datos personales</h4>
-              <p>
-                Guardamos tu nombre, correo, foto de perfil, los textos y audios
-                generados, únicamente para prestar el servicio. No vendemos tus
-                datos ni usamos tus documentos para entrenar modelos propios de
-                inteligencia artificial. Para funcionar, el texto de tus
-                documentos se envía a proveedores externos: Google (generación
-                de resúmenes con Gemini y síntesis de voz), Cloudinary
-                (almacenamiento de audios) y MongoDB Atlas (base de datos).
-                Estos proveedores tratan la información según sus propias
-                políticas. Tus datos se tratan conforme a la Ley 1581 de 2012 de
-                Colombia, y puedes solicitar la consulta, corrección o
-                eliminación de tu información en cualquier momento.
-              </p>
-
-              <h4>9. Ley aplicable y cambios</h4>
-              <p>
-                Estos términos se rigen por las leyes de la República de
-                Colombia. Podemos actualizarlos, y el uso continuado del
-                servicio implica aceptar los cambios.
-              </p>
+              <p>Al aceptar, confirmas que leíste y aceptas estos términos.</p>
             </div>
 
             {!canAccept && (
@@ -413,4 +352,4 @@ export default function SignUp({ onNavigate }) {
       )}
     </FormCard>
   );
-            }
+}
