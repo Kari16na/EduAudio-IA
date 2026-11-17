@@ -17,3 +17,5 @@ cypress/screenshots/
 
 # Logs
 *.log
+
+public/
