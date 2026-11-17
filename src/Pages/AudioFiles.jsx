@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Play, Download, Pencil, Trash2, ArrowLeft, Check, X } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import { getAudios, deleteAudio, updateAudioName, normalizeAudioUrl } from "../services/api";
-import styles from "./MisAudios.module.css";
+import styles from "./AudioFiles.module.css";
 
 const MAX_AUDIO_NAME_LENGTH = 50;
 
@@ -10,7 +10,7 @@ function esCloudinary(url) {
   return /res\.cloudinary\.com/i.test(url || "");
 }
 
-export default function MisAudios({ onNavigate }) {
+export default function AudioFiles({ onNavigate }) {
   const [audios, setAudios] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);

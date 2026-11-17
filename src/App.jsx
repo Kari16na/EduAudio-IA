@@ -4,10 +4,10 @@ import Login from "./Pages/Login";
 import SignUp from "./Pages/SignUp";
 import ForgotPassword from "./Pages/ForgotPassword";
 import Dashboard from "./Pages/Dashboard";
-import MisAudios from "./Pages/MisAudios";
+import AudioFiles from "./Pages/AudioFiles";
 import Player from "./Pages/Player";
 import ResetPassword from "./Pages/ResetPassword";
-import Perfil from "./Pages/Perfil";
+import Profile from "./Pages/Profile";
 
 function getInitialPage() {
   const pathname = window.location.pathname;

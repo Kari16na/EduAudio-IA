@@ -1,7 +1,7 @@
 describe('Pantalla de Landing', () => {
 
   beforeEach(() => {
-    cy.visit('http://localhost:5173');
+    cy.visit('https://edu-audio-ia.vercel.app/');
   });
 
   it('muestra el contenido principal correctamente', () => {

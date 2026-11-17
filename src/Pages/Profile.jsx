@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { GraduationCap, CheckCircle, XCircle, ArrowLeft, Lock, Camera, Trash2, Eye, EyeOff } from "lucide-react";
 import NavBar from "../Components/NavBar";
 import { getAudiosCount, updateUserName, changePassword, uploadProfilePhoto, deleteAccount } from "../services/api";
-import styles from "./Perfil.module.css";
+import styles from "./Profile.module.css";
 
-export default function Perfil({ onNavigate }) {
+export default function Profile({ onNavigate }) {
   const [usuario, setUsuario] = useState(() =>
     JSON.parse(localStorage.getItem("user") || "{}")
   );

@@ -1,6 +1,6 @@
 describe('Login - EduAudio IA', () => {
   beforeEach(() => {
-    cy.visit('http://localhost:5173');
+    cy.visit('https://edu-audio-ia.vercel.app/');
     cy.contains('Iniciar Sesión').click();
   });
 
